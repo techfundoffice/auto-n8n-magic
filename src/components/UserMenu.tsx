@@ -12,9 +12,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const UserMenu = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
   if (!user) return null;
@@ -26,6 +28,11 @@ const UserMenu = () => {
   const handleSignOut = async () => {
     setIsOpen(false);
     await signOut();
+  };
+
+  const handleSettings = () => {
+    setIsOpen(false);
+    navigate('/settings');
   };
 
   return (
@@ -58,7 +65,10 @@ const UserMenu = () => {
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="text-gray-300 hover:bg-gray-700 focus:bg-gray-700">
+        <DropdownMenuItem 
+          onClick={handleSettings}
+          className="text-gray-300 hover:bg-gray-700 focus:bg-gray-700 cursor-pointer"
+        >
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
