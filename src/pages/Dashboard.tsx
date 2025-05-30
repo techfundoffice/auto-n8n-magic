@@ -12,6 +12,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { useUserWorkflows } from "@/hooks/useUserWorkflows";
 import UserMenu from '@/components/UserMenu';
 import CreateWorkflowModal from '@/components/CreateWorkflowModal';
+import Chatbot from '@/components/Chatbot';
 
 // Prebuilt workflows data
 const prebuiltWorkflows = [
@@ -90,6 +91,7 @@ const Dashboard = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const { toast } = useToast();
   const { credits, loading: creditsLoading, deductCredits, hasCredits } = useCredits();
   const { workflows, loading: workflowsLoading, refetch: refetchWorkflows } = useUserWorkflows();
@@ -261,7 +263,7 @@ const Dashboard = () => {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${isChatbotOpen ? 'lg:mr-96' : ''}`}>
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
@@ -610,6 +612,11 @@ const Dashboard = () => {
         open={showCreateModal} 
         onOpenChange={setShowCreateModal}
         onWorkflowCreated={refetchWorkflows}
+      />
+
+      <Chatbot 
+        isOpen={isChatbotOpen}
+        onToggle={() => setIsChatbotOpen(!isChatbotOpen)}
       />
     </div>
   );
