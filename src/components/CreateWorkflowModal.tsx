@@ -42,6 +42,19 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
     }
   };
 
+  // Check if form is valid for button enable/disable
+  const isFormValid = workflowName.trim() !== '' && workflowJson.trim() !== '' && validateJson(workflowJson);
+  const canSubmit = isFormValid && hasCredits(10) && !isCreating;
+
+  console.log('Form validation:', {
+    workflowName: workflowName.trim(),
+    workflowJson: workflowJson.trim(),
+    isJsonValid: validateJson(workflowJson),
+    hasCredits: hasCredits(10),
+    isCreating,
+    canSubmit
+  });
+
   const handleCreateWorkflow = async () => {
     if (!user) {
       toast({
@@ -71,7 +84,12 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
     }
 
     if (!hasCredits(10)) {
-      return; // Credit check already shows toast
+      toast({
+        title: "Insufficient credits",
+        description: "You need at least 10 credits to create a workflow.",
+        variant: "destructive"
+      });
+      return;
     }
 
     setIsCreating(true);
@@ -134,7 +152,7 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center">
+          <Dialog Title className="text-white flex items-center">
             <Zap className="w-5 h-5 mr-2" />
             Create New Workflow
           </DialogTitle>
@@ -224,7 +242,7 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
           </Button>
           <Button 
             onClick={handleCreateWorkflow}
-            disabled={isCreating || !workflowName.trim() || !hasCredits(10)}
+            disabled={!canSubmit}
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50"
           >
             {isCreating ? (

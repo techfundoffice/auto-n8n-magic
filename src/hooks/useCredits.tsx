@@ -99,6 +99,8 @@ export const useCredits = () => {
       return false;
     }
 
+    console.log(`Checking if user has ${amount} credits. Current balance: ${credits}`);
+    
     if (credits < amount) {
       toast({
         title: "Insufficient credits",
@@ -140,6 +142,7 @@ export const useCredits = () => {
   };
 
   const hasCredits = (amount: number = 10): boolean => {
+    console.log(`Checking if user has ${amount} credits. Current balance: ${credits}`);
     return credits >= amount;
   };
 
