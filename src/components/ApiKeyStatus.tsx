@@ -1,6 +1,5 @@
 
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ApiKeyStatusProps {
   status: 'valid' | 'invalid' | 'checking' | 'unchecked';
@@ -16,39 +15,17 @@ const ApiKeyStatus = ({ status, provider }: ApiKeyStatusProps) => {
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'checking':
         return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
+      case 'unchecked':
+        return <div className="h-4 w-4 rounded-full border-2 border-gray-500" />;
       default:
         return null;
     }
   };
 
-  const getMessage = () => {
-    switch (status) {
-      case 'valid':
-        return `${provider} API key is valid`;
-      case 'invalid':
-        return `${provider} API key is invalid`;
-      case 'checking':
-        return `Checking ${provider} API key...`;
-      default:
-        return '';
-    }
-  };
-
-  if (status === 'unchecked') return null;
-
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
-            {getIcon()}
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{getMessage()}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div className="flex-shrink-0">
+      {getIcon()}
+    </div>
   );
 };
 

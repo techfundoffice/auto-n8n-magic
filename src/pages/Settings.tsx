@@ -90,7 +90,14 @@ const Settings = () => {
   };
 
   const validateApiKey = async (provider: 'openai' | 'n8n', apiKey: string, apiUrl?: string) => {
-    if (!apiKey.trim()) return;
+    if (!apiKey.trim()) {
+      if (provider === 'openai') {
+        setOpenaiStatus('unchecked');
+      } else {
+        setN8nStatus('unchecked');
+      }
+      return;
+    }
 
     if (provider === 'openai') {
       setOpenaiStatus('checking');
@@ -191,15 +198,15 @@ const Settings = () => {
                               {...field}
                               type={showOpenAIKey ? "text" : "password"}
                               placeholder="sk-..."
-                              className="bg-gray-700 border-gray-600 text-white pr-20"
-                              onBlur={(e) => {
-                                field.onBlur(e);
-                                if (e.target.value !== field.value) {
-                                  validateApiKey('openai', e.target.value, form.getValues('openai_url'));
+                              className="bg-gray-700 border-gray-600 text-white pr-12"
+                              onBlur={() => {
+                                const openaiKey = form.getValues('openai_key');
+                                const openaiUrl = form.getValues('openai_url');
+                                if (openaiKey) {
+                                  validateApiKey('openai', openaiKey, openaiUrl);
                                 }
                               }}
                             />
-                            <ApiKeyStatus status={openaiStatus} provider="OpenAI" />
                             <Button
                               type="button"
                               variant="ghost"
@@ -226,11 +233,11 @@ const Settings = () => {
                             {...field}
                             placeholder="https://api.openai.com/v1"
                             className="bg-gray-700 border-gray-600 text-white"
-                            onBlur={(e) => {
-                              field.onBlur(e);
+                            onBlur={() => {
                               const openaiKey = form.getValues('openai_key');
+                              const openaiUrl = form.getValues('openai_url');
                               if (openaiKey) {
-                                validateApiKey('openai', openaiKey, e.target.value);
+                                validateApiKey('openai', openaiKey, openaiUrl);
                               }
                             }}
                           />
@@ -239,6 +246,16 @@ const Settings = () => {
                       </FormItem>
                     )}
                   />
+                  {/* Permanent API Key Status Display */}
+                  <div className="flex items-center space-x-2 mt-2">
+                    <ApiKeyStatus status={openaiStatus} provider="OpenAI" />
+                    <span className="text-sm text-gray-400">
+                      {openaiStatus === 'valid' && 'OpenAI API key is valid'}
+                      {openaiStatus === 'invalid' && 'OpenAI API key is invalid'}
+                      {openaiStatus === 'checking' && 'Checking OpenAI API key...'}
+                      {openaiStatus === 'unchecked' && 'Enter a key to validate'}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -263,15 +280,15 @@ const Settings = () => {
                               {...field}
                               type={showN8nKey ? "text" : "password"}
                               placeholder="n8n-api-key..."
-                              className="bg-gray-700 border-gray-600 text-white pr-20"
-                              onBlur={(e) => {
-                                field.onBlur(e);
-                                if (e.target.value !== field.value) {
-                                  validateApiKey('n8n', e.target.value, form.getValues('n8n_url'));
+                              className="bg-gray-700 border-gray-600 text-white pr-12"
+                              onBlur={() => {
+                                const n8nKey = form.getValues('n8n_key');
+                                const n8nUrl = form.getValues('n8n_url');
+                                if (n8nKey) {
+                                  validateApiKey('n8n', n8nKey, n8nUrl);
                                 }
                               }}
                             />
-                            <ApiKeyStatus status={n8nStatus} provider="n8n" />
                             <Button
                               type="button"
                               variant="ghost"
@@ -298,11 +315,11 @@ const Settings = () => {
                             {...field}
                             placeholder="https://your-n8n-instance.com/api/v1"
                             className="bg-gray-700 border-gray-600 text-white"
-                            onBlur={(e) => {
-                              field.onBlur(e);
+                            onBlur={() => {
                               const n8nKey = form.getValues('n8n_key');
+                              const n8nUrl = form.getValues('n8n_url');
                               if (n8nKey) {
-                                validateApiKey('n8n', n8nKey, e.target.value);
+                                validateApiKey('n8n', n8nKey, n8nUrl);
                               }
                             }}
                           />
@@ -311,6 +328,16 @@ const Settings = () => {
                       </FormItem>
                     )}
                   />
+                  {/* Permanent API Key Status Display */}
+                  <div className="flex items-center space-x-2 mt-2">
+                    <ApiKeyStatus status={n8nStatus} provider="n8n" />
+                    <span className="text-sm text-gray-400">
+                      {n8nStatus === 'valid' && 'n8n API key is valid'}
+                      {n8nStatus === 'invalid' && 'n8n API key is invalid'}
+                      {n8nStatus === 'checking' && 'Checking n8n API key...'}
+                      {n8nStatus === 'unchecked' && 'Enter a key to validate'}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
 
