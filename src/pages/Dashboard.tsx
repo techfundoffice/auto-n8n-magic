@@ -6,18 +6,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Zap, Settings, Activity, Star, Github, Download, Play } from 'lucide-react';
+import { Upload, Zap, Settings, Activity, Star, Github, Download, Play, Plus } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useCredits } from "@/hooks/useCredits";
+import { useUserWorkflows } from "@/hooks/useUserWorkflows";
 import UserMenu from '@/components/UserMenu';
+import CreateWorkflowModal from '@/components/CreateWorkflowModal';
 
 const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [workflowName, setWorkflowName] = useState('');
   const [workflowDescription, setWorkflowDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const { toast } = useToast();
   const { credits, loading: creditsLoading, deductCredits, hasCredits } = useCredits();
+  const { workflows, loading: workflowsLoading, refetch: refetchWorkflows } = useUserWorkflows();
 
   const prebuiltWorkflows = [
     {
@@ -88,11 +92,19 @@ const Dashboard = () => {
     }
   ];
 
+  // Generate recent activity from user workflows and static data
   const recentActivity = [
+    ...workflows.slice(0, 3).map(workflow => ({
+      id: `workflow-${workflow.id}`,
+      action: "Created",
+      workflow: workflow.name,
+      time: new Date(workflow.created_at).toLocaleDateString(),
+      status: "success"
+    })),
     { id: 1, action: "Deployed", workflow: "Twitter to Notion", time: "2 hours ago", status: "success" },
     { id: 2, action: "Generated", workflow: "Custom API Workflow", time: "1 day ago", status: "success" },
     { id: 3, action: "Fixed", workflow: "RSS to Slack", time: "3 days ago", status: "success" }
-  ];
+  ].slice(0, 6);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -196,9 +208,19 @@ const Dashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Dashboard</h1>
-          <p className="text-gray-400">Generate, enhance, and deploy your n8n workflows with AI</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">Dashboard</h1>
+            <p className="text-gray-400">Generate, enhance, and deploy your n8n workflows with AI</p>
+          </div>
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            disabled={!hasCredits(10)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Workflow
+          </Button>
         </div>
 
         <Tabs defaultValue="create" className="space-y-6">
@@ -401,29 +423,43 @@ const Dashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700/30">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                        <div>
-                          <p className="text-white font-medium">
-                            {activity.action} "{activity.workflow}"
-                          </p>
-                          <p className="text-sm text-gray-400">{activity.time}</p>
+                {workflowsLoading ? (
+                  <div className="text-center text-gray-400 py-8">Loading recent activity...</div>
+                ) : recentActivity.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700/30">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          <div>
+                            <p className="text-white font-medium">
+                              {activity.action} "{activity.workflow}"
+                            </p>
+                            <p className="text-sm text-gray-400">{activity.time}</p>
+                          </div>
                         </div>
+                        <Badge className="bg-green-500/10 text-green-400 border-green-500/20">
+                          {activity.status}
+                        </Badge>
                       </div>
-                      <Badge className="bg-green-500/10 text-green-400 border-green-500/20">
-                        {activity.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    No recent activity. Create your first workflow to get started!
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      <CreateWorkflowModal 
+        open={showCreateModal} 
+        onOpenChange={setShowCreateModal}
+        onWorkflowCreated={refetchWorkflows}
+      />
     </div>
   );
 };
