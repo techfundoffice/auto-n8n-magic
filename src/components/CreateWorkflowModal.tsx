@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,7 +151,7 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700">
         <DialogHeader>
-          <Dialog Title className="text-white flex items-center">
+          <DialogTitle className="text-white flex items-center">
             <Zap className="w-5 h-5 mr-2" />
             Create New Workflow
           </DialogTitle>
