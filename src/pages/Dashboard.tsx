@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Zap, Settings, Activity, Star, Github, Download, Play } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import UserMenu from '@/components/UserMenu';
 
 const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -165,6 +166,7 @@ const Dashboard = () => {
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </Button>
+              <UserMenu />
             </div>
           </div>
         </div>
