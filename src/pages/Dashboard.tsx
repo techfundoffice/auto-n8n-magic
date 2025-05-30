@@ -13,6 +13,76 @@ import { useUserWorkflows } from "@/hooks/useUserWorkflows";
 import UserMenu from '@/components/UserMenu';
 import CreateWorkflowModal from '@/components/CreateWorkflowModal';
 
+// Prebuilt workflows data
+const prebuiltWorkflows = [
+  {
+    id: 1,
+    name: "RSS to Social Media",
+    description: "Automatically post new RSS feed items to Twitter and LinkedIn",
+    category: "Content",
+    complexity: "Beginner",
+    estimatedTime: "5 min",
+    stars: 142,
+    tags: ["RSS", "Twitter", "LinkedIn", "Social Media"],
+    githubUrl: "https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/nodes/RssFeedRead"
+  },
+  {
+    id: 2,
+    name: "Slack to Notion",
+    description: "Save important Slack messages to a Notion database",
+    category: "Productivity",
+    complexity: "Intermediate",
+    estimatedTime: "10 min",
+    stars: 89,
+    tags: ["Slack", "Notion", "Database", "Automation"],
+    githubUrl: "https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/nodes/Slack"
+  },
+  {
+    id: 3,
+    name: "GitHub Issue Tracker",
+    description: "Monitor GitHub issues and send alerts to your team",
+    category: "Development",
+    complexity: "Advanced",
+    estimatedTime: "15 min",
+    stars: 234,
+    tags: ["GitHub", "Issues", "Monitoring", "Alerts"],
+    githubUrl: "https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/nodes/Github"
+  },
+  {
+    id: 4,
+    name: "Email to CRM",
+    description: "Automatically add new email contacts to your CRM system",
+    category: "Sales",
+    complexity: "Intermediate",
+    estimatedTime: "8 min",
+    stars: 67,
+    tags: ["Email", "CRM", "Contacts", "Sales"],
+    githubUrl: "https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/nodes/EmailReadImap"
+  },
+  {
+    id: 5,
+    name: "Website Monitor",
+    description: "Monitor website uptime and send notifications on downtime",
+    category: "Monitoring",
+    complexity: "Beginner",
+    estimatedTime: "5 min",
+    stars: 156,
+    tags: ["Monitoring", "Uptime", "Notifications", "HTTP"],
+    githubUrl: "https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/nodes/HttpRequest"
+  },
+  {
+    id: 6,
+    name: "Data Backup Automation",
+    description: "Backup your important data to multiple cloud storage services",
+    category: "Backup",
+    complexity: "Advanced",
+    estimatedTime: "20 min",
+    stars: 98,
+    tags: ["Backup", "Cloud Storage", "Automation", "Data"],
+    githubUrl: "https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/nodes/GoogleDrive"
+  }
+];
+
 const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [workflowName, setWorkflowName] = useState('');
