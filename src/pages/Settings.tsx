@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Save } from 'lucide-react';
+import ApiKeyStatus from '@/components/ApiKeyStatus';
+import { validateOpenAIKey, validateN8nKey } from '@/utils/apiKeyValidation';
 
 const apiKeySchema = z.object({
   openai_key: z.string().optional(),
@@ -21,12 +23,16 @@ const apiKeySchema = z.object({
 
 type ApiKeyForm = z.infer<typeof apiKeySchema>;
 
+type ValidationStatus = 'valid' | 'invalid' | 'checking' | 'unchecked';
+
 const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
   const [showN8nKey, setShowN8nKey] = useState(false);
+  const [openaiStatus, setOpenaiStatus] = useState<ValidationStatus>('unchecked');
+  const [n8nStatus, setN8nStatus] = useState<ValidationStatus>('unchecked');
 
   const form = useForm<ApiKeyForm>({
     resolver: zodResolver(apiKeySchema),
@@ -80,6 +86,24 @@ const Settings = () => {
         description: "Failed to load API keys",
         variant: "destructive"
       });
+    }
+  };
+
+  const validateApiKey = async (provider: 'openai' | 'n8n', apiKey: string, apiUrl?: string) => {
+    if (!apiKey.trim()) return;
+
+    if (provider === 'openai') {
+      setOpenaiStatus('checking');
+      const isValid = await validateOpenAIKey(apiKey, apiUrl);
+      setOpenaiStatus(isValid ? 'valid' : 'invalid');
+    } else if (provider === 'n8n') {
+      if (!apiUrl?.trim()) {
+        setN8nStatus('invalid');
+        return;
+      }
+      setN8nStatus('checking');
+      const isValid = await validateN8nKey(apiKey, apiUrl);
+      setN8nStatus(isValid ? 'valid' : 'invalid');
     }
   };
 
@@ -167,8 +191,15 @@ const Settings = () => {
                               {...field}
                               type={showOpenAIKey ? "text" : "password"}
                               placeholder="sk-..."
-                              className="bg-gray-700 border-gray-600 text-white pr-10"
+                              className="bg-gray-700 border-gray-600 text-white pr-20"
+                              onBlur={(e) => {
+                                field.onBlur(e);
+                                if (e.target.value !== field.value) {
+                                  validateApiKey('openai', e.target.value, form.getValues('openai_url'));
+                                }
+                              }}
                             />
+                            <ApiKeyStatus status={openaiStatus} provider="OpenAI" />
                             <Button
                               type="button"
                               variant="ghost"
@@ -195,6 +226,13 @@ const Settings = () => {
                             {...field}
                             placeholder="https://api.openai.com/v1"
                             className="bg-gray-700 border-gray-600 text-white"
+                            onBlur={(e) => {
+                              field.onBlur(e);
+                              const openaiKey = form.getValues('openai_key');
+                              if (openaiKey) {
+                                validateApiKey('openai', openaiKey, e.target.value);
+                              }
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -225,8 +263,15 @@ const Settings = () => {
                               {...field}
                               type={showN8nKey ? "text" : "password"}
                               placeholder="n8n-api-key..."
-                              className="bg-gray-700 border-gray-600 text-white pr-10"
+                              className="bg-gray-700 border-gray-600 text-white pr-20"
+                              onBlur={(e) => {
+                                field.onBlur(e);
+                                if (e.target.value !== field.value) {
+                                  validateApiKey('n8n', e.target.value, form.getValues('n8n_url'));
+                                }
+                              }}
                             />
+                            <ApiKeyStatus status={n8nStatus} provider="n8n" />
                             <Button
                               type="button"
                               variant="ghost"
@@ -253,6 +298,13 @@ const Settings = () => {
                             {...field}
                             placeholder="https://your-n8n-instance.com/api/v1"
                             className="bg-gray-700 border-gray-600 text-white"
+                            onBlur={(e) => {
+                              field.onBlur(e);
+                              const n8nKey = form.getValues('n8n_key');
+                              if (n8nKey) {
+                                validateApiKey('n8n', n8nKey, e.target.value);
+                              }
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
