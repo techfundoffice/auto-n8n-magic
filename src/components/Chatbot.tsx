@@ -1,13 +1,13 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, X, Send, Zap, Code, User, Bot } from 'lucide-react';
+import { X, Send, Zap, Code, User, Bot } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useCredits } from "@/hooks/useCredits";
 import { useAuth } from "@/hooks/useAuth";
+import N8nLogo from './N8nLogo';
 
 interface Message {
   id: string;
@@ -135,7 +135,7 @@ const Chatbot = ({ isOpen, onToggle }: ChatbotProps) => {
           onClick={onToggle}
           className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
         >
-          <MessageSquare className="w-6 h-6" />
+          <N8nLogo size={28} className="text-white" />
         </Button>
       )}
 
