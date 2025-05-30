@@ -1,14 +1,15 @@
-
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Upload, Code, Wand2, ArrowRight, Github, Star, Users, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCredits } from '@/hooks/useCredits';
 import UserMenu from '@/components/UserMenu';
 
 const Index = () => {
   const { user } = useAuth();
+  const { credits, loading: creditsLoading } = useCredits();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -24,6 +25,9 @@ const Index = () => {
         <div className="flex items-center space-x-4">
           {user ? (
             <>
+              <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20">
+                💳 {creditsLoading ? '...' : credits.toLocaleString()} credits
+              </Badge>
               <Link to="/dashboard">
                 <Button variant="ghost" className="text-white hover:bg-white/10">
                   Dashboard

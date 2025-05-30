@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Zap, Settings, Activity, Star, Github, Download, Play } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useCredits } from "@/hooks/useCredits";
 import UserMenu from '@/components/UserMenu';
 
 const Dashboard = () => {
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [workflowDescription, setWorkflowDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  const { credits, loading: creditsLoading, deductCredits, hasCredits } = useCredits();
 
   const prebuiltWorkflows = [
     {
@@ -114,8 +115,19 @@ const Dashboard = () => {
       return;
     }
 
+    if (!hasCredits(10)) {
+      return; // Credit check already shows toast
+    }
+
     setIsGenerating(true);
     
+    // Deduct credits first
+    const success = await deductCredits(10);
+    if (!success) {
+      setIsGenerating(false);
+      return;
+    }
+
     // Simulate API call
     setTimeout(() => {
       setIsGenerating(false);
@@ -126,7 +138,17 @@ const Dashboard = () => {
     }, 3000);
   };
 
-  const handleDeployTemplate = (workflow: any) => {
+  const handleDeployTemplate = async (workflow: any) => {
+    if (!hasCredits(10)) {
+      return; // Credit check already shows toast
+    }
+
+    // Deduct credits first
+    const success = await deductCredits(10);
+    if (!success) {
+      return;
+    }
+
     toast({
       title: "Deploying workflow",
       description: `${workflow.name} is being deployed to your n8n instance.`,
@@ -160,7 +182,7 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20">
-                💳 1,250 credits
+                💳 {creditsLoading ? '...' : credits.toLocaleString()} credits
               </Badge>
               <Button variant="ghost" className="text-gray-300 hover:text-white">
                 <Settings className="w-4 h-4 mr-2" />
@@ -256,7 +278,7 @@ const Dashboard = () => {
                     AI Generation
                   </CardTitle>
                   <CardDescription className="text-gray-400">
-                    Let AI enhance and deploy your workflow
+                    Let AI enhance and deploy your workflow (10 credits)
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -272,8 +294,8 @@ const Dashboard = () => {
                   
                   <Button 
                     onClick={handleGenerateWorkflow}
-                    disabled={isGenerating || !selectedFile || !workflowName}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    disabled={isGenerating || !selectedFile || !workflowName || !hasCredits(10)}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50"
                   >
                     {isGenerating ? (
                       <>
@@ -283,7 +305,7 @@ const Dashboard = () => {
                     ) : (
                       <>
                         <Zap className="w-4 h-4 mr-2" />
-                        Generate & Deploy
+                        Generate & Deploy (10 credits)
                       </>
                     )}
                   </Button>
@@ -344,11 +366,12 @@ const Dashboard = () => {
                     <div className="flex gap-2">
                       <Button 
                         onClick={() => handleDeployTemplate(workflow)}
-                        className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                        className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50"
                         size="sm"
+                        disabled={!hasCredits(10)}
                       >
                         <Play className="w-4 h-4 mr-1" />
-                        Deploy
+                        Deploy (10 credits)
                       </Button>
                       <Button 
                         variant="outline" 
