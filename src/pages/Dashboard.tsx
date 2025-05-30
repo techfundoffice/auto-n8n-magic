@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Zap, Settings, Activity, Star, Github, Download, Play, Plus } from 'lucide-react';
+import { Upload, Zap, Settings, Activity, Star, Github, Download, Play, Plus, Sparkles, FileText, Image } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useCredits } from "@/hooks/useCredits";
 import { useUserWorkflows } from "@/hooks/useUserWorkflows";
@@ -17,80 +17,12 @@ const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [workflowName, setWorkflowName] = useState('');
   const [workflowDescription, setWorkflowDescription] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { toast } = useToast();
   const { credits, loading: creditsLoading, deductCredits, hasCredits } = useCredits();
   const { workflows, loading: workflowsLoading, refetch: refetchWorkflows } = useUserWorkflows();
-
-  const prebuiltWorkflows = [
-    {
-      id: 1,
-      name: "Twitter to Notion",
-      description: "Automatically save tweets to your Notion database with full metadata",
-      category: "Social Media",
-      stars: 245,
-      complexity: "Beginner",
-      estimatedTime: "5 min setup",
-      tags: ["Twitter", "Notion", "Social Media"],
-      githubUrl: "https://github.com/n8n-io/n8n-workflows/blob/master/workflows/Twitter_to_Notion.json"
-    },
-    {
-      id: 2,
-      name: "RSS to Slack",
-      description: "Monitor RSS feeds and send new items to Slack channels",
-      category: "Communication",
-      stars: 189,
-      complexity: "Beginner",
-      estimatedTime: "3 min setup",
-      tags: ["RSS", "Slack", "Notifications"],
-      githubUrl: "https://github.com/n8n-io/n8n-workflows/blob/master/workflows/RSS_to_Slack.json"
-    },
-    {
-      id: 3,
-      name: "GitHub Issues Tracker",
-      description: "Get notified when new GitHub issues are created in your repositories",
-      category: "Development",
-      stars: 156,
-      complexity: "Intermediate",
-      estimatedTime: "7 min setup",
-      tags: ["GitHub", "Issues", "Notifications"],
-      githubUrl: "https://github.com/n8n-io/n8n-workflows/blob/master/workflows/GitHub_Issues_Notification.json"
-    },
-    {
-      id: 4,
-      name: "YouTube Video Monitor",
-      description: "Monitor YouTube channels and get notified of new video uploads",
-      category: "Content",
-      stars: 178,
-      complexity: "Beginner",
-      estimatedTime: "4 min setup",
-      tags: ["YouTube", "Monitoring", "Content"],
-      githubUrl: "https://github.com/n8n-io/n8n-workflows/blob/master/workflows/Youtube_New_Video_Alert.json"
-    },
-    {
-      id: 5,
-      name: "Stripe Payment Logger",
-      description: "Log successful Stripe payments to Google Sheets for analytics",
-      category: "Finance",
-      stars: 203,
-      complexity: "Intermediate",
-      estimatedTime: "8 min setup",
-      tags: ["Stripe", "Google Sheets", "Analytics"],
-      githubUrl: "https://github.com/n8n-io/n8n-workflows/blob/master/workflows/Stripe_to_Google_Sheets.json"
-    },
-    {
-      id: 6,
-      name: "GPT-4 Chatbot",
-      description: "Create a powerful chatbot using OpenAI's GPT-4 API",
-      category: "AI",
-      stars: 312,
-      complexity: "Advanced",
-      estimatedTime: "12 min setup",
-      tags: ["OpenAI", "GPT-4", "Chatbot"],
-      githubUrl: "https://github.com/n8n-io/n8n-workflows/blob/master/workflows/OpenAI_Chatbot.json"
-    }
-  ];
 
   // Generate recent activity from user workflows and static data
   const recentActivity = [
@@ -117,7 +49,60 @@ const Dashboard = () => {
     }
   };
 
-  const handleGenerateWorkflow = async () => {
+  const handleGenerateFromPrompt = async () => {
+    if (!aiPrompt.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please describe what you want your workflow to do.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!hasCredits(15)) {
+      toast({
+        title: "Insufficient credits",
+        description: "You need at least 15 credits to generate a workflow from a description.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      // Deduct credits first
+      const success = await deductCredits(15);
+      if (!success) {
+        setIsGenerating(false);
+        return;
+      }
+
+      // Simulate AI generation - in real implementation, this would call an AI service
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      toast({
+        title: "Workflow generated successfully!",
+        description: "Your AI-generated workflow is ready for review and deployment.",
+      });
+      
+      // Reset form
+      setAiPrompt('');
+      refetchWorkflows();
+      
+    } catch (error) {
+      console.error('Error generating workflow:', error);
+      toast({
+        title: "Generation failed",
+        description: "Failed to generate workflow. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleEnhanceWorkflow = async () => {
     if (!selectedFile || !workflowName) {
       toast({
         title: "Missing information",
@@ -144,8 +129,8 @@ const Dashboard = () => {
     setTimeout(() => {
       setIsGenerating(false);
       toast({
-        title: "Workflow generated successfully!",
-        description: "Your workflow has been created and is ready for deployment.",
+        title: "Workflow enhanced successfully!",
+        description: "Your workflow has been optimized and is ready for deployment.",
       });
     }, 3000);
   };
@@ -226,8 +211,12 @@ const Dashboard = () => {
         <Tabs defaultValue="create" className="space-y-6">
           <TabsList className="bg-gray-800/50 border border-gray-700/50">
             <TabsTrigger value="create" className="data-[state=active]:bg-blue-600">
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI Generator
+            </TabsTrigger>
+            <TabsTrigger value="enhance" className="data-[state=active]:bg-blue-600">
               <Upload className="w-4 h-4 mr-2" />
-              Create Workflow
+              Enhance Workflow
             </TabsTrigger>
             <TabsTrigger value="library" className="data-[state=active]:bg-blue-600">
               <Github className="w-4 h-4 mr-2" />
@@ -239,8 +228,93 @@ const Dashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Create Workflow Tab */}
+          {/* AI Generator Tab */}
           <TabsContent value="create" className="space-y-6">
+            <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  AI Workflow Generator
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Describe your automation needs and let AI create a complete n8n workflow
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="ai-prompt" className="text-gray-300">Describe Your Workflow</Label>
+                      <Textarea
+                        id="ai-prompt"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        className="bg-gray-900/50 border-gray-600 text-white min-h-[120px]"
+                        placeholder="Example: I want to automatically send a Slack message whenever a new GitHub issue is created in my repository, and also log it to a Google Sheet with the issue details..."
+                        rows={5}
+                      />
+                    </div>
+                    
+                    <Button 
+                      onClick={handleGenerateFromPrompt}
+                      disabled={isGenerating || !aiPrompt.trim() || !hasCredits(15)}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Generate Workflow (15 credits)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <h4 className="text-blue-400 font-medium mb-3 flex items-center">
+                      <Zap className="w-4 h-4 mr-2" />
+                      AI Capabilities
+                    </h4>
+                    <ul className="text-sm text-gray-300 space-y-2">
+                      <li>• Generate complete workflows from natural language</li>
+                      <li>• Suggest optimal node configurations</li>
+                      <li>• Add error handling and retry logic</li>
+                      <li>• Include data transformation and validation</li>
+                      <li>• Set up proper authentication flows</li>
+                      <li>• Optimize for performance and reliability</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-700 pt-6">
+                  <h4 className="text-white font-medium mb-3">Example Prompts</h4>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {[
+                      "Monitor RSS feeds and post new articles to Twitter",
+                      "Backup Notion database to Google Drive daily",
+                      "Send email alerts when website is down",
+                      "Sync Airtable records with Salesforce"
+                    ].map((example, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setAiPrompt(example)}
+                        className="text-left p-3 bg-gray-900/30 hover:bg-gray-900/50 border border-gray-700 rounded-lg text-gray-300 hover:text-white transition-colors"
+                      >
+                        "{example}"
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Enhance Workflow Tab */}
+          <TabsContent value="enhance" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Upload Section */}
               <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-xl">
@@ -250,7 +324,7 @@ const Dashboard = () => {
                     Upload Workflow
                   </CardTitle>
                   <CardDescription className="text-gray-400">
-                    Upload JSON files or images of your n8n workflows
+                    Upload JSON files or images of your n8n workflows for AI enhancement
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -284,50 +358,57 @@ const Dashboard = () => {
                       className="bg-gray-900/50 border-gray-600 text-white file:bg-blue-600 file:text-white file:border-0 file:rounded file:px-4 file:py-2"
                     />
                     {selectedFile && (
-                      <p className="text-sm text-blue-400 mt-2">
-                        Selected: {selectedFile.name}
-                      </p>
+                      <div className="flex items-center mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded">
+                        {selectedFile.type.startsWith('image/') ? (
+                          <Image className="w-4 h-4 text-blue-400 mr-2" />
+                        ) : (
+                          <FileText className="w-4 h-4 text-blue-400 mr-2" />
+                        )}
+                        <span className="text-sm text-blue-400">{selectedFile.name}</span>
+                      </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Generate Section */}
+              {/* Enhancement Section */}
               <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-xl">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <Zap className="w-5 h-5 mr-2" />
-                    AI Generation
+                    AI Enhancement
                   </CardTitle>
                   <CardDescription className="text-gray-400">
-                    Let AI enhance and deploy your workflow (10 credits)
+                    Let AI optimize and enhance your workflow (10 credits)
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <h4 className="text-blue-400 font-medium mb-2">What our AI can do:</h4>
+                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <h4 className="text-green-400 font-medium mb-2">Enhancement Features:</h4>
                     <ul className="text-sm text-gray-300 space-y-1">
                       <li>• Fix broken or incomplete workflows</li>
                       <li>• Optimize performance and reliability</li>
-                      <li>• Add error handling and logging</li>
-                      <li>• Generate workflows from descriptions</li>
+                      <li>• Add comprehensive error handling</li>
+                      <li>• Improve data transformation logic</li>
+                      <li>• Add logging and monitoring</li>
+                      <li>• Security and authentication improvements</li>
                     </ul>
                   </div>
                   
                   <Button 
-                    onClick={handleGenerateWorkflow}
+                    onClick={handleEnhanceWorkflow}
                     disabled={isGenerating || !selectedFile || !workflowName || !hasCredits(10)}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50"
                   >
                     {isGenerating ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Generating...
+                        Enhancing...
                       </>
                     ) : (
                       <>
                         <Zap className="w-4 h-4 mr-2" />
-                        Generate & Deploy (10 credits)
+                        Enhance & Deploy (10 credits)
                       </>
                     )}
                   </Button>
