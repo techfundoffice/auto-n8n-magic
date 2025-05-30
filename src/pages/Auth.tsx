@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Zap, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -24,7 +23,9 @@ const Auth = () => {
   const defaultTab = searchParams.get('tab') || 'signin';
 
   useEffect(() => {
+    console.log('Auth page - user state:', user?.email);
     if (user) {
+      console.log('User already authenticated, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [user, navigate]);
@@ -33,9 +34,11 @@ const Auth = () => {
     e.preventDefault();
     if (!email || !password) return;
 
+    console.log('Form submit - signing in:', email);
     setIsLoading(true);
     const { error } = await signIn(email, password);
     if (!error) {
+      console.log('Sign in successful, should redirect to dashboard');
       navigate('/dashboard');
     }
     setIsLoading(false);
@@ -45,6 +48,7 @@ const Auth = () => {
     e.preventDefault();
     if (!email || !password || !fullName) return;
 
+    console.log('Form submit - signing up:', email);
     setIsLoading(true);
     const { error } = await signUp(email, password, fullName);
     setIsLoading(false);
