@@ -13,6 +13,7 @@ import { useUserWorkflows } from "@/hooks/useUserWorkflows";
 import UserMenu from '@/components/UserMenu';
 import CreateWorkflowModal from '@/components/CreateWorkflowModal';
 import Chatbot from '@/components/Chatbot';
+import TestSuiteButton from '@/components/TestSuiteButton';
 
 // Prebuilt workflows data
 const prebuiltWorkflows = [
@@ -253,6 +254,7 @@ const Dashboard = () => {
               <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20">
                 💳 {creditsLoading ? '...' : credits.toLocaleString()} credits
               </Badge>
+              <TestSuiteButton />
               <Button variant="ghost" className="text-gray-300 hover:text-white">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
