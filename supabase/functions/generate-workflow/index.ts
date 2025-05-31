@@ -74,28 +74,42 @@ serve(async (req) => {
             role: 'system',
             content: `You are an expert n8n workflow generator. Create a complete, functional n8n workflow JSON based on the user's description. 
 
+IMPORTANT: First ask the user to clarify their deployment preference:
+1. "Do you want this workflow optimized for the n8n Cloud/API (seamless push to n8n platform)?"
+2. "Or do you prefer a self-hosted compatible workflow (non-n8n API, standalone automation)?"
+
+Based on their choice:
+- For n8n Cloud/API: Create standard n8n workflow JSON with proper node IDs, connections, and n8n-specific configurations
+- For self-hosted: Create a more generic automation workflow that can run independently with custom API calls and webhook configurations
+
 The workflow should include:
 - Proper node configurations with all required parameters
 - Correct connections between nodes
 - Error handling nodes where appropriate
 - Realistic authentication setups
 - Data transformation nodes as needed
+- For n8n API: Use n8n's built-in nodes and services
+- For self-hosted: Use HTTP Request nodes, webhooks, and custom scripts
 
-Return a valid n8n workflow JSON that can be imported directly into n8n. Be specific with node types, parameters, and connections.
+Return a valid workflow JSON that matches their deployment preference.
 
 Format your response as a JSON object with these keys:
-- workflow: The complete n8n workflow JSON
+- workflow: The complete workflow JSON
 - description: A brief description of what the workflow does
 - nodes: Array of node types used
-- complexity: "Beginner", "Intermediate", or "Advanced"`
+- complexity: "Beginner", "Intermediate", or "Advanced"
+- deployment_type: "n8n_api" or "self_hosted"
+- setup_instructions: Array of setup steps specific to their deployment choice`
           },
           {
             role: 'user',
-            content: `Generate an n8n workflow for: ${prompt}`
+            content: `Generate a workflow for: ${prompt}
+
+Please first ask me about my deployment preference (n8n Cloud/API vs self-hosted), then generate the appropriate workflow.`
           }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 2500,
       }),
     });
 
@@ -116,12 +130,14 @@ Format your response as a JSON object with these keys:
     try {
       workflowData = JSON.parse(generatedContent);
     } catch (parseError) {
-      // If parsing fails, return the raw content
+      // If parsing fails, return the raw content with deployment preference query
       workflowData = {
         workflow: null,
         description: generatedContent,
         nodes: [],
-        complexity: "Intermediate"
+        complexity: "Intermediate",
+        deployment_type: "unknown",
+        setup_instructions: []
       };
     }
 

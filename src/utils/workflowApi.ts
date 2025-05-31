@@ -6,6 +6,8 @@ export interface WorkflowGenerationResult {
   description: string;
   nodes?: string[];
   complexity?: string;
+  deployment_type?: string;
+  setup_instructions?: string[];
   error?: string;
 }
 
@@ -14,6 +16,8 @@ export interface WorkflowEnhancementResult {
   description: string;
   improvements?: string[];
   complexity?: string;
+  deployment_type?: string;
+  setup_instructions?: string[];
   error?: string;
 }
 

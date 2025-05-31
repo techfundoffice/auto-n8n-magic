@@ -72,31 +72,57 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert n8n workflow optimizer. Enhance the provided n8n workflow based on the user's enhancement request.
+            content: `You are an expert n8n workflow optimizer. Enhance the provided workflow based on the user's enhancement request.
 
-Focus on:
+IMPORTANT: Before making enhancements, ask the user about their deployment preference:
+1. "Is this workflow for n8n Cloud/API (seamless integration with n8n platform)?"
+2. "Or is this for a self-hosted instance (standalone automation with custom APIs)?"
+
+Based on their preference, optimize accordingly:
+
+For n8n Cloud/API workflows:
+- Use n8n's built-in nodes and services
+- Optimize for n8n's ecosystem and integrations
+- Include n8n-specific error handling and retry logic
+- Use n8n's credential system
+- Add n8n webhook and trigger configurations
+
+For self-hosted workflows:
+- Focus on HTTP Request nodes and custom API calls
+- Add independent authentication and API key management
+- Include custom retry logic and error handling
+- Optimize for standalone operation
+- Add detailed logging and monitoring capabilities
+
+Enhancement focus areas:
 - Adding proper error handling and retry logic
 - Optimizing node configurations
 - Adding data validation and transformation
 - Improving security and authentication
 - Adding logging and monitoring capabilities
-- Optimizing performance
+- Optimizing performance based on deployment type
 
-Return a valid enhanced n8n workflow JSON that can be imported directly into n8n.
+Return a valid enhanced workflow JSON that matches their deployment preference.
 
 Format your response as a JSON object with these keys:
-- workflow: The enhanced n8n workflow JSON
+- workflow: The enhanced workflow JSON
 - description: Description of what was enhanced
 - improvements: Array of specific improvements made
-- complexity: "Beginner", "Intermediate", or "Advanced"`
+- complexity: "Beginner", "Intermediate", or "Advanced"
+- deployment_type: "n8n_api" or "self_hosted"
+- setup_instructions: Array of deployment-specific setup steps`
           },
           {
             role: 'user',
-            content: `Original workflow: ${JSON.stringify(workflow)}\n\nEnhancement request: ${enhancementPrompt}`
+            content: `Original workflow: ${JSON.stringify(workflow)}
+
+Enhancement request: ${enhancementPrompt}
+
+Please first confirm the deployment type (n8n Cloud/API vs self-hosted), then enhance the workflow accordingly.`
           }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 2500,
       }),
     });
 
@@ -122,7 +148,9 @@ Format your response as a JSON object with these keys:
         workflow: workflow,
         description: enhancedContent,
         improvements: ["AI response parsing failed"],
-        complexity: "Intermediate"
+        complexity: "Intermediate",
+        deployment_type: "unknown",
+        setup_instructions: []
       };
     }
 

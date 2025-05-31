@@ -141,6 +141,14 @@ const Chatbot = ({ isOpen, onToggle }: ChatbotProps) => {
           botMessage += `\n\nComplexity: ${result.complexity}`;
         }
 
+        if (result.deployment_type) {
+          botMessage += `\n\nDeployment Type: ${result.deployment_type === 'n8n_api' ? 'n8n Cloud/API' : 'Self-hosted'}`;
+        }
+
+        if (result.setup_instructions && result.setup_instructions.length > 0) {
+          botMessage += `\n\nSetup Instructions:\n${result.setup_instructions.map(instruction => `• ${instruction}`).join('\n')}`;
+        }
+
         addMessage('bot', botMessage, creditsNeeded, result.workflow);
 
         toast({
