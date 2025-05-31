@@ -35,6 +35,11 @@ const UserMenu = () => {
     navigate('/settings');
   };
 
+  const handleProfile = () => {
+    setIsOpen(false);
+    navigate('/profile');
+  };
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
@@ -61,7 +66,10 @@ const UserMenu = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-gray-700" />
-        <DropdownMenuItem className="text-gray-300 hover:bg-gray-700 focus:bg-gray-700">
+        <DropdownMenuItem 
+          onClick={handleProfile}
+          className="text-gray-300 hover:bg-gray-700 focus:bg-gray-700 cursor-pointer"
+        >
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
