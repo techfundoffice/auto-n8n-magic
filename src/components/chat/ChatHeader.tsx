@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X, Zap, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatHeaderProps {
   credits: number;
@@ -9,6 +10,12 @@ interface ChatHeaderProps {
 }
 
 const ChatHeader = ({ credits, onToggle }: ChatHeaderProps) => {
+  const navigate = useNavigate();
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
+  };
+
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
       <div className="flex items-center space-x-2">
@@ -27,8 +34,8 @@ const ChatHeader = ({ credits, onToggle }: ChatHeaderProps) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.location.href = '/settings'}
-          className="text-gray-400 hover:text-white"
+          onClick={handleSettingsClick}
+          className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
           title="Settings"
         >
           <Settings className="w-4 h-4" />
@@ -37,7 +44,7 @@ const ChatHeader = ({ credits, onToggle }: ChatHeaderProps) => {
           variant="ghost"
           size="sm"
           onClick={onToggle}
-          className="text-gray-400 hover:text-white"
+          className="text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
         >
           <X className="w-4 h-4" />
         </Button>
