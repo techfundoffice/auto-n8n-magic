@@ -15,7 +15,7 @@ interface TestCase {
   name: string;
   description: string;
   category: string;
-  status: 'pending' | 'running' | 'passed' | 'failed';
+  status?: 'pending' | 'running' | 'passed' | 'failed';
   action: () => Promise<void>;
 }
 
