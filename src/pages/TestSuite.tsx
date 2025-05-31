@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
@@ -15,7 +14,6 @@ interface TestCase {
   name: string;
   description: string;
   category: string;
-  status?: 'pending' | 'running' | 'passed' | 'failed';
   action: () => Promise<void>;
 }
 
