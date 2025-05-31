@@ -1,30 +1,17 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { X, Send, Zap, Code, User, Bot, Settings, Copy, ExternalLink } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useCredits } from "@/hooks/useCredits";
 import { useAuth } from "@/hooks/useAuth";
-import N8nLogo from './N8nLogo';
 import { generateWorkflow, enhanceWorkflow } from '@/utils/workflowApi';
-
-interface Message {
-  id: string;
-  type: 'user' | 'bot';
-  content: string;
-  timestamp: Date;
-  creditsUsed?: number;
-  workflowData?: any;
-  isError?: boolean;
-}
-
-interface ChatbotProps {
-  isOpen: boolean;
-  onToggle: () => void;
-}
+import { Message, ChatbotProps } from '@/types/chat';
+import N8nLogo from './N8nLogo';
+import ChatHeader from './chat/ChatHeader';
+import ChatMessage from './chat/ChatMessage';
+import ChatInput from './chat/ChatInput';
+import LoadingIndicator from './chat/LoadingIndicator';
 
 const Chatbot = ({ isOpen, onToggle }: ChatbotProps) => {
   const [messages, setMessages] = useState<Message[]>([
@@ -81,6 +68,18 @@ const Chatbot = ({ isOpen, onToggle }: ChatbotProps) => {
     }
   };
 
+  const handleCopyWorkflow = (workflowData: any) => {
+    copyToClipboard(JSON.stringify(workflowData, null, 2));
+  };
+
+  const handleSelectWorkflow = (workflowData: any) => {
+    setSelectedWorkflow(workflowData);
+  };
+
+  const handleClearSelectedWorkflow = () => {
+    setSelectedWorkflow(null);
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading || !user) return;
 
@@ -90,7 +89,6 @@ const Chatbot = ({ isOpen, onToggle }: ChatbotProps) => {
     setIsLoading(true);
 
     try {
-      // Determine if this is a workflow generation or enhancement
       const isEnhancement = selectedWorkflow !== null;
       const creditsNeeded = isEnhancement ? 10 : 15;
 
@@ -100,7 +98,6 @@ const Chatbot = ({ isOpen, onToggle }: ChatbotProps) => {
         return;
       }
 
-      // Deduct credits first
       const success = await deductCredits(creditsNeeded);
       if (!success) {
         setIsLoading(false);
@@ -170,21 +167,6 @@ const Chatbot = ({ isOpen, onToggle }: ChatbotProps) => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const formatTimestamp = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
-  };
-
   return (
     <>
       {/* Chat Toggle Button */}
@@ -199,181 +181,33 @@ const Chatbot = ({ isOpen, onToggle }: ChatbotProps) => {
 
       {/* Chat Panel */}
       <div className={`fixed top-0 right-0 h-full w-96 bg-gray-900/95 backdrop-blur-xl border-l border-gray-700/50 z-40 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <h3 className="text-white font-semibold">AI Assistant</h3>
-              <p className="text-xs text-gray-400">Generate & enhance workflows</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs">
-              {credits} credits
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.location.href = '/settings'}
-              className="text-gray-400 hover:text-white"
-              title="Settings"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggle}
-              className="text-gray-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        <ChatHeader credits={credits} onToggle={onToggle} />
 
         {/* Messages */}
         <ScrollArea className="flex-1 h-[calc(100vh-140px)] p-4">
           <div className="space-y-4">
             {messages.map((message) => (
-              <div
+              <ChatMessage
                 key={message.id}
-                className={`flex items-start space-x-3 ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  message.type === 'user' 
-                    ? 'bg-blue-600' 
-                    : message.isError 
-                      ? 'bg-red-500'
-                      : 'bg-gradient-to-r from-purple-500 to-pink-500'
-                }`}>
-                  {message.type === 'user' ? (
-                    <User className="w-4 h-4 text-white" />
-                  ) : (
-                    <Bot className="w-4 h-4 text-white" />
-                  )}
-                </div>
-                <div className={`flex-1 ${message.type === 'user' ? 'text-right' : ''}`}>
-                  <div
-                    className={`inline-block max-w-[280px] p-3 rounded-lg text-sm ${
-                      message.type === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : message.isError
-                          ? 'bg-red-900/50 text-red-200 border border-red-700'
-                          : 'bg-gray-800 text-gray-200 border border-gray-700'
-                    }`}
-                  >
-                    <div className="whitespace-pre-wrap">{message.content}</div>
-                    {message.workflowData && (
-                      <div className="mt-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-400">Workflow JSON:</span>
-                          <div className="flex space-x-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => copyToClipboard(JSON.stringify(message.workflowData, null, 2))}
-                              className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                              title="Copy JSON"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setSelectedWorkflow(message.workflowData)}
-                              className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                              title="Enhance this workflow"
-                            >
-                              <Code className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="bg-gray-900/50 p-2 rounded text-xs text-gray-300 max-h-20 overflow-y-auto">
-                          <pre>{JSON.stringify(message.workflowData, null, 2)}</pre>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-xs text-gray-500">
-                      {formatTimestamp(message.timestamp)}
-                    </span>
-                    {message.creditsUsed && message.creditsUsed > 0 && (
-                      <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 text-xs">
-                        -{message.creditsUsed} credits
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
+                message={message}
+                onCopyWorkflow={handleCopyWorkflow}
+                onSelectWorkflow={handleSelectWorkflow}
+              />
             ))}
-            {isLoading && (
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className="inline-block bg-gray-800 border border-gray-700 p-3 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                      <span className="text-sm text-gray-400">Generating with AI...</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {isLoading && <LoadingIndicator />}
           </div>
           <div ref={messagesEndRef} />
         </ScrollArea>
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-gray-700/50">
-          {selectedWorkflow && (
-            <div className="mb-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-400">Enhancing workflow (10 credits)</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedWorkflow(null)}
-                  className="text-blue-400 hover:text-blue-300 h-6 w-6 p-0"
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-          )}
-          <div className="flex space-x-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={selectedWorkflow ? "How should I enhance this workflow?" : "Describe your workflow needs..."}
-              className="flex-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-              disabled={isLoading}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isLoading || !user}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Generation: 15 credits • Enhancement: 10 credits
-            {!user && (
-              <span className="block text-yellow-400">Sign in required to use AI features</span>
-            )}
-          </p>
-        </div>
+        <ChatInput
+          input={input}
+          setInput={setInput}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+          user={user}
+          selectedWorkflow={selectedWorkflow}
+          onClearSelectedWorkflow={handleClearSelectedWorkflow}
+        />
       </div>
 
       {/* Overlay */}
