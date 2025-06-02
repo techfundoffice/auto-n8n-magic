@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,11 +81,11 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
       console.log('=== CALLING SUPABASE FUNCTION ===');
       
       const requestBody = { packageId };
-      console.log('Request body:', requestBody);
+      console.log('Request body before stringify:', requestBody);
       
-      // Call the edge function with explicit JSON body
+      // Call the edge function with explicit JSON stringified body
       const { data, error } = await supabase.functions.invoke('create-credit-payment', {
-        body: requestBody,
+        body: JSON.stringify(requestBody),
         headers: {
           'Content-Type': 'application/json'
         }
