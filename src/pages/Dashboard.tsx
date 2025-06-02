@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +10,7 @@ import CreditPurchaseButton from '@/components/CreditPurchaseButton';
 import TestSuiteButton from '@/components/TestSuiteButton';
 import UserMenu from '@/components/UserMenu';
 import Chatbot from '@/components/Chatbot';
+import StripeTestButton from '@/components/StripeTestButton';
 
 const Dashboard = () => {
   const { user } = useAuth();
