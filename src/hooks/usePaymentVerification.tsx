@@ -16,9 +16,20 @@ export const usePaymentVerification = () => {
 
     console.log('Payment verification - URL params:', { paymentStatus, sessionId, credits });
 
-    if (paymentStatus === 'success' && sessionId && user) {
-      console.log('Starting payment verification for session:', sessionId);
-      verifyPayment(sessionId, credits);
+    if (paymentStatus === 'success' && user) {
+      if (sessionId) {
+        console.log('Starting payment verification for session:', sessionId);
+        verifyPayment(sessionId, credits);
+      } else {
+        console.error('Payment success but no session_id found in URL params');
+        toast({
+          title: "Payment Verification Error",
+          description: "Missing session information. Please contact support if credits weren't added.",
+          variant: "destructive"
+        });
+        // Clean up URL anyway
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     } else if (paymentStatus === 'cancelled') {
       toast({
         title: "Payment Cancelled",
@@ -27,13 +38,6 @@ export const usePaymentVerification = () => {
       });
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
-    } else if (paymentStatus === 'success' && !sessionId) {
-      console.error('Payment success but no session_id found');
-      toast({
-        title: "Payment Verification Error",
-        description: "Missing session information. Please contact support.",
-        variant: "destructive"
-      });
     }
   }, [user, toast]);
 
