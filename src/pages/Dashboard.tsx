@@ -57,7 +57,7 @@ const Dashboard = () => {
           <div className="mb-6 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
             <h3 className="text-yellow-400 font-semibold mb-2">Stripe Payment Testing</h3>
             <p className="text-yellow-300 text-sm mb-3">
-              Test the Stripe payment integration using the published domain. This will work with real Stripe checkout.
+              Test the Stripe payment integration using the published domain. Enter your test card details below and complete the checkout process.
             </p>
             <StripeTestButton />
           </div>
