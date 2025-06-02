@@ -14,7 +14,13 @@ export const usePaymentVerification = () => {
     const sessionId = urlParams.get('session_id');
     const credits = urlParams.get('credits');
 
-    console.log('Payment verification - URL params:', { paymentStatus, sessionId, credits });
+    console.log('Payment verification - URL params:', { 
+      paymentStatus, 
+      sessionId, 
+      credits,
+      fullUrl: window.location.href,
+      search: window.location.search 
+    });
 
     if (paymentStatus === 'success' && user) {
       if (sessionId) {
@@ -22,6 +28,7 @@ export const usePaymentVerification = () => {
         verifyPayment(sessionId, credits);
       } else {
         console.error('Payment success but no session_id found in URL params');
+        console.error('Available URL params:', Array.from(urlParams.entries()));
         toast({
           title: "Payment Verification Error",
           description: "Missing session information. Please contact support if credits weren't added.",
@@ -43,13 +50,14 @@ export const usePaymentVerification = () => {
 
   const verifyPayment = async (sessionId: string, credits: string | null) => {
     try {
-      console.log('Calling verify-credit-payment function with sessionId:', sessionId);
+      console.log('About to call verify-credit-payment function with sessionId:', sessionId);
+      console.log('User auth token exists:', !!user);
       
       const { data, error } = await supabase.functions.invoke('verify-credit-payment', {
         body: { sessionId }
       });
 
-      console.log('Verification response:', { data, error });
+      console.log('Verification response received:', { data, error });
 
       if (error) {
         console.error('Payment verification error:', error);
@@ -61,7 +69,7 @@ export const usePaymentVerification = () => {
         return;
       }
 
-      if (data.success) {
+      if (data?.success) {
         console.log('Payment verified successfully, credits added:', data.creditsAdded);
         toast({
           title: "Payment Successful!",
@@ -74,12 +82,12 @@ export const usePaymentVerification = () => {
         console.log('Payment verification returned non-success:', data);
         toast({
           title: "Payment Processing",
-          description: data.message || "Payment is being processed. Credits will be added shortly.",
+          description: data?.message || "Payment is being processed. Credits will be added shortly.",
         });
       }
 
     } catch (error) {
-      console.error('Error verifying payment:', error);
+      console.error('Error calling verify-credit-payment function:', error);
       toast({
         title: "Verification Error",
         description: "Please contact support if credits weren't added to your account.",
