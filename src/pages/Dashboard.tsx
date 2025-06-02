@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,6 @@ import CreditPurchaseButton from '@/components/CreditPurchaseButton';
 import TestSuiteButton from '@/components/TestSuiteButton';
 import UserMenu from '@/components/UserMenu';
 import Chatbot from '@/components/Chatbot';
-import StripeTestButton from '@/components/StripeTestButton';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -53,15 +53,6 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          {/* Add the test button near the top */}
-          <div className="mb-6 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
-            <h3 className="text-yellow-400 font-semibold mb-2">Stripe Payment Testing</h3>
-            <p className="text-yellow-300 text-sm mb-3">
-              Test the Stripe payment integration using the published domain. Enter your test card details below and complete the checkout process.
-            </p>
-            <StripeTestButton />
-          </div>
-
           {/* Welcome Section */}
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">

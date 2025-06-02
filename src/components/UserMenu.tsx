@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, ChevronDown, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -40,6 +40,11 @@ const UserMenu = () => {
     navigate('/profile');
   };
 
+  const handleBilling = () => {
+    setIsOpen(false);
+    navigate('/billing');
+  };
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
@@ -72,6 +77,13 @@ const UserMenu = () => {
         >
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem 
+          onClick={handleBilling}
+          className="text-gray-300 hover:bg-gray-700 focus:bg-gray-700 cursor-pointer"
+        >
+          <CreditCard className="mr-2 h-4 w-4" />
+          <span>Billing & Credits</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={handleSettings}
