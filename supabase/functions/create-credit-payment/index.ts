@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,30 +8,55 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('=== Simple Credit Payment Function Started ===');
+    console.log('=== Credit Payment Function Started ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
 
     // Get Stripe key
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeSecretKey) {
+      console.error('STRIPE_SECRET_KEY not found in environment');
       throw new Error("STRIPE_SECRET_KEY not found");
     }
+    console.log('Stripe key found');
 
-    // Parse request body
-    const body = await req.json();
-    const { packageId } = body;
+    // Get request body with better error handling
+    let body;
+    let packageId;
+    
+    try {
+      const bodyText = await req.text();
+      console.log('Raw body text:', bodyText);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        console.error('Empty request body');
+        throw new Error("Empty request body");
+      }
+      
+      body = JSON.parse(bodyText);
+      console.log('Parsed body:', body);
+      packageId = body.packageId;
+      
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      console.error('Error details:', parseError.message);
+      throw new Error(`Failed to parse request body: ${parseError.message}`);
+    }
 
     if (!packageId) {
+      console.error('No packageId in request body');
       throw new Error("packageId is required");
     }
 
     console.log('Package ID:', packageId);
 
-    // Define packages
+    // Define packages with simpler structure
     const packages = {
       starter: { credits: 500, price: 5 },
       professional: { credits: 1000, price: 9 },
@@ -41,6 +65,7 @@ serve(async (req) => {
 
     const selectedPackage = packages[packageId as keyof typeof packages];
     if (!selectedPackage) {
+      console.error('Invalid package ID:', packageId);
       throw new Error(`Invalid package: ${packageId}`);
     }
 
@@ -50,10 +75,14 @@ serve(async (req) => {
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2023-10-16",
     });
+    console.log('Stripe initialized');
+
+    // Get origin for URLs
+    const origin = req.headers.get("origin") || "http://localhost:3000";
+    console.log('Origin:', origin);
 
     // Create checkout session
-    const origin = req.headers.get("origin") || "https://rqhjxaturfnjholigypt.supabase.co";
-    
+    console.log('Creating checkout session...');
     const session = await stripe.checkout.sessions.create({
       line_items: [
         {
@@ -63,7 +92,7 @@ serve(async (req) => {
               name: `${selectedPackage.credits} Credits`,
               description: `Credit package for AutoN8n`,
             },
-            unit_amount: selectedPackage.price * 100,
+            unit_amount: selectedPackage.price * 100, // Convert to cents
           },
           quantity: 1,
         },
@@ -77,18 +106,28 @@ serve(async (req) => {
       }
     });
 
-    console.log('Checkout session created:', session.id);
+    console.log('Checkout session created successfully:', session.id);
+    console.log('Session URL:', session.url);
 
-    return new Response(JSON.stringify({ url: session.url }), {
+    return new Response(JSON.stringify({ 
+      success: true,
+      url: session.url,
+      sessionId: session.id 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('=== EDGE FUNCTION ERROR ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     
     return new Response(JSON.stringify({ 
-      error: error.message
+      success: false,
+      error: error.message,
+      details: `Edge function error: ${error.message}`
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
