@@ -53,8 +53,25 @@ export const usePaymentVerification = () => {
       console.log('About to call verify-credit-payment function with sessionId:', sessionId);
       console.log('User auth token exists:', !!user);
       
+      // Get fresh session for verification
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error during verification:', sessionError);
+        throw new Error(`Session error: ${sessionError.message}`);
+      }
+
+      if (!session?.access_token) {
+        console.error('No valid session for verification');
+        throw new Error('Authentication required for payment verification');
+      }
+      
       const { data, error } = await supabase.functions.invoke('verify-credit-payment', {
-        body: { sessionId }
+        body: { sessionId },
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       console.log('Verification response received:', { data, error });

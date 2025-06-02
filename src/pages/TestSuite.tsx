@@ -164,10 +164,24 @@ const TestSuite = () => {
         
         // Step 1: Call create-credit-payment function
         console.log('Step 1: Creating Stripe checkout session...');
+        
+        // Get fresh session to ensure valid auth
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          throw new Error(`Session error: ${sessionError.message}`);
+        }
+
+        if (!session?.access_token) {
+          console.error('No valid session found');
+          throw new Error('No valid session found. Please log in again.');
+        }
+        
         const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-credit-payment', {
           body: { packageId: 'starter' },
           headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
           }
         });
@@ -185,12 +199,9 @@ const TestSuite = () => {
         console.log('Checkout session created successfully');
         
         // Step 2: Simulate successful payment completion
-        // In a real test, this would involve opening the Stripe checkout in a headless browser
-        // For this test, we'll simulate the payment completion by directly calling verify-credit-payment
         console.log('Step 2: Simulating successful payment...');
         
         // Extract session ID from the checkout URL (for testing purposes)
-        const urlParams = new URLSearchParams(checkoutData.url.split('#')[0].split('?')[1] || '');
         const sessionId = checkoutData.url.match(/cs_test_[a-zA-Z0-9]+/)?.[0];
         
         if (!sessionId) {
@@ -207,7 +218,7 @@ const TestSuite = () => {
         const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-credit-payment', {
           body: { sessionId },
           headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
           }
         });

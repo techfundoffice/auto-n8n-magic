@@ -76,14 +76,21 @@ serve(async (req) => {
       email: user.email
     });
 
-    // Parse request body
+    // Parse request body with better error handling
     let requestBody;
     try {
-      requestBody = await req.json();
+      const bodyText = await req.text();
+      console.log('Raw request body:', bodyText);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        throw new Error("Empty request body");
+      }
+      
+      requestBody = JSON.parse(bodyText);
       console.log('Request body parsed:', requestBody);
     } catch (parseError) {
       console.error('Failed to parse request body:', parseError);
-      throw new Error("Invalid request body");
+      throw new Error(`Invalid request body: ${parseError.message}`);
     }
 
     const { packageId } = requestBody;
@@ -147,6 +154,9 @@ serve(async (req) => {
     console.log('Creating Stripe checkout session...');
     let session;
     try {
+      const origin = req.headers.get("origin") || "https://rqhjxaturfnjholigypt.supabase.co";
+      console.log('Using origin:', origin);
+      
       session = await stripe.checkout.sessions.create({
         customer: customerId,
         line_items: [
@@ -163,8 +173,8 @@ serve(async (req) => {
           },
         ],
         mode: "payment",
-        success_url: `${req.headers.get("origin")}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}&credits=${selectedPackage.credits}`,
-        cancel_url: `${req.headers.get("origin")}/dashboard?payment=cancelled`,
+        success_url: `${origin}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}&credits=${selectedPackage.credits}`,
+        cancel_url: `${origin}/dashboard?payment=cancelled`,
         metadata: {
           user_id: user.id,
           package_id: packageId,
