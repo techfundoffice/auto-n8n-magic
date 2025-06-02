@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,25 +79,12 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
     try {
       console.log('=== CALLING SUPABASE FUNCTION ===');
       
-      // Get fresh session to ensure we have valid auth
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const requestBody = { packageId };
+      console.log('Request body:', requestBody);
       
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw new Error(`Session error: ${sessionError.message}`);
-      }
-
-      if (!session?.access_token) {
-        console.error('No valid session found');
-        throw new Error('No valid session found. Please log in again.');
-      }
-
-      console.log('Session is valid, making function call...');
-      console.log('Request payload:', { packageId });
-
-      // Call the edge function with proper JSON formatting
+      // Call the edge function with explicit JSON body
       const { data, error } = await supabase.functions.invoke('create-credit-payment', {
-        body: { packageId },
+        body: requestBody,
         headers: {
           'Content-Type': 'application/json'
         }
