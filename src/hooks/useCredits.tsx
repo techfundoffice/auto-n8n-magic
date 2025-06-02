@@ -19,7 +19,8 @@ export const useCredits = () => {
   const { toast } = useToast();
 
   const fetchCredits = async () => {
-    if (!user) {
+    if (!user?.id) {
+      console.log('No user ID available, skipping credits fetch');
       setCredits(0);
       setLoading(false);
       return;
@@ -63,6 +64,12 @@ export const useCredits = () => {
   useEffect(() => {
     fetchCredits();
 
+    // Only set up real-time subscription if user exists
+    if (!user?.id) {
+      console.log('No user ID, skipping real-time subscription setup');
+      return;
+    }
+
     // Set up real-time subscription
     const channel = supabase
       .channel('user-credits-changes')
@@ -72,7 +79,7 @@ export const useCredits = () => {
           event: '*',
           schema: 'public',
           table: 'user_credits',
-          filter: `user_id=eq.${user?.id}`
+          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
           console.log('Credits updated via realtime:', payload);
@@ -96,10 +103,10 @@ export const useCredits = () => {
       supabase.removeChannel(channel);
       window.removeEventListener('creditsUpdated', handleCreditsUpdated);
     };
-  }, [user]);
+  }, [user?.id]); // Make sure to depend on user.id specifically
 
   const deductCredits = async (amount: number = 10): Promise<boolean> => {
-    if (!user) {
+    if (!user?.id) {
       toast({
         title: "Authentication required",
         description: "Please sign in to use this feature.",

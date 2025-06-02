@@ -19,7 +19,8 @@ export const useUserWorkflows = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) {
+    if (!user?.id) {
+      console.log('No user ID available, skipping workflows fetch');
       setWorkflows([]);
       setLoading(false);
       return;
@@ -47,7 +48,7 @@ export const useUserWorkflows = () => {
 
     fetchWorkflows();
 
-    // Set up real-time subscription
+    // Set up real-time subscription only if user exists
     const channel = supabase
       .channel('user-workflows-changes')
       .on(
@@ -69,13 +70,13 @@ export const useUserWorkflows = () => {
       console.log('Cleaning up workflows subscription');
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user?.id]); // Depend on user.id specifically
 
   return {
     workflows,
     loading,
     refetch: () => {
-      if (user) {
+      if (user?.id) {
         setLoading(true);
         const fetchWorkflows = async () => {
           const { data, error } = await supabase
