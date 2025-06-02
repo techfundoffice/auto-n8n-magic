@@ -67,7 +67,7 @@ export const usePaymentVerification = () => {
       }
       
       const { data, error } = await supabase.functions.invoke('verify-credit-payment', {
-        body: { sessionId },
+        body: JSON.stringify({ sessionId }),
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'

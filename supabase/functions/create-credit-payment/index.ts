@@ -76,29 +76,39 @@ serve(async (req) => {
       email: user.email
     });
 
-    // Parse request body with better error handling
+    // Enhanced request body parsing with better error handling
     let requestBody;
     try {
       const bodyText = await req.text();
-      console.log('Raw request body:', bodyText);
+      console.log('Raw request body text:', bodyText);
+      console.log('Request body length:', bodyText.length);
       
       if (!bodyText || bodyText.trim() === '') {
-        throw new Error("Empty request body");
+        console.error('Empty request body detected');
+        throw new Error("Request body is empty - packageId parameter is required");
       }
       
-      requestBody = JSON.parse(bodyText);
-      console.log('Request body parsed:', requestBody);
+      // Try to parse as JSON
+      try {
+        requestBody = JSON.parse(bodyText);
+        console.log('Successfully parsed request body:', requestBody);
+      } catch (jsonError) {
+        console.error('Failed to parse JSON:', jsonError);
+        console.error('Body content that failed to parse:', bodyText);
+        throw new Error(`Invalid JSON in request body: ${jsonError.message}`);
+      }
     } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
-      throw new Error(`Invalid request body: ${parseError.message}`);
+      console.error('Failed to read request body:', parseError);
+      throw new Error(`Failed to read request body: ${parseError.message}`);
     }
 
     const { packageId } = requestBody;
-    console.log('Package ID received:', packageId);
+    console.log('Extracted packageId:', packageId);
 
     if (!packageId) {
-      console.error('Package ID missing from request');
-      throw new Error("Package ID is required");
+      console.error('Package ID missing from request body');
+      console.error('Available properties in body:', Object.keys(requestBody || {}));
+      throw new Error("packageId parameter is required in request body");
     }
 
     // Define credit packages
@@ -111,7 +121,8 @@ serve(async (req) => {
     const selectedPackage = packages[packageId as keyof typeof packages];
     if (!selectedPackage) {
       console.error('Invalid package ID:', packageId);
-      throw new Error(`Invalid package ID: ${packageId}`);
+      console.error('Available packages:', Object.keys(packages));
+      throw new Error(`Invalid package ID: ${packageId}. Available packages: ${Object.keys(packages).join(', ')}`);
     }
 
     console.log('Selected package:', selectedPackage);
