@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -146,10 +145,16 @@ export const useCredits = () => {
     return credits >= amount;
   };
 
+  const openCreditPurchase = () => {
+    // This will be used by components to trigger the purchase modal
+    window.dispatchEvent(new CustomEvent('openCreditPurchase'));
+  };
+
   return {
     credits,
     loading,
     deductCredits,
-    hasCredits
+    hasCredits,
+    openCreditPurchase
   };
 };
