@@ -84,10 +84,6 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
       console.log('=== CALLING SUPABASE FUNCTION ===');
       console.log('Function name: create-credit-payment');
       console.log('Request body:', { packageId });
-      console.log('Supabase client config:', {
-        url: supabase.supabaseUrl,
-        key: supabase.supabaseKey?.substring(0, 20) + '...'
-      });
 
       // Get fresh session to ensure we have valid auth
       const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
