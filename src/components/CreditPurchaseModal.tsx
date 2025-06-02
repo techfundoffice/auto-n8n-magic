@@ -57,15 +57,18 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const handlePurchase = async (packageId: string) => {
-    console.log('handlePurchase called with packageId:', packageId);
-    console.log('User:', user);
-    console.log('Auth state:', { user: !!user, email: user?.email });
+    console.log('=== PURCHASE FLOW STARTED ===');
+    console.log('Package ID:', packageId);
+    console.log('User exists:', !!user);
+    console.log('User email:', user?.email);
+    console.log('Session exists:', !!session);
+    console.log('Session token exists:', !!session?.access_token);
 
-    if (!user) {
-      console.error('No user found - authentication required');
+    if (!user || !session) {
+      console.error('Authentication missing - User or session not found');
       toast({
         title: "Authentication required",
         description: "Please sign in to purchase credits.",
@@ -78,30 +81,80 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
     setSelectedPackage(packageId);
 
     try {
-      console.log('About to invoke create-credit-payment function...');
-      console.log('Supabase client:', supabase);
-      
-      const { data, error } = await supabase.functions.invoke('create-credit-payment', {
-        body: { packageId }
+      console.log('=== CALLING SUPABASE FUNCTION ===');
+      console.log('Function name: create-credit-payment');
+      console.log('Request body:', { packageId });
+      console.log('Supabase client config:', {
+        url: supabase.supabaseUrl,
+        key: supabase.supabaseKey?.substring(0, 20) + '...'
       });
 
-      console.log('Function invocation completed');
+      // Get fresh session to ensure we have valid auth
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error(`Session error: ${sessionError.message}`);
+      }
+
+      if (!currentSession) {
+        console.error('No current session found');
+        throw new Error('No valid session found. Please log in again.');
+      }
+
+      console.log('Current session valid:', !!currentSession.access_token);
+
+      // Make the function call with explicit headers
+      console.log('Making function call...');
+      const { data, error } = await supabase.functions.invoke('create-credit-payment', {
+        body: { packageId },
+        headers: {
+          'Authorization': `Bearer ${currentSession.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('=== FUNCTION RESPONSE ===');
       console.log('Response data:', data);
       console.log('Response error:', error);
 
       if (error) {
-        console.error('Function invocation error:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
+        console.error('Function invocation error details:', {
+          message: error.message,
+          status: error.status,
+          statusText: error.statusText,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        
+        let errorMessage = 'Unknown error occurred';
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.details) {
+          errorMessage = error.details;
+        }
+        
         toast({
           title: "Payment Error",
-          description: `Failed to create payment session: ${error.message || 'Unknown error'}`,
+          description: `Failed to create payment session: ${errorMessage}`,
           variant: "destructive"
         });
         return;
       }
 
-      if (!data || !data.url) {
-        console.error('No URL returned from function', data);
+      if (!data) {
+        console.error('No data returned from function');
+        toast({
+          title: "Payment Error", 
+          description: "No response received from payment service.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!data.url) {
+        console.error('No URL in response data:', data);
         toast({
           title: "Payment Error",
           description: "No payment URL received from server.",
@@ -110,7 +163,8 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
         return;
       }
 
-      console.log('Opening Stripe checkout URL:', data.url);
+      console.log('=== OPENING CHECKOUT ===');
+      console.log('Stripe checkout URL:', data.url);
       
       // Open Stripe checkout in a new tab
       window.open(data.url, '_blank');
@@ -121,8 +175,13 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
       });
 
     } catch (error) {
-      console.error('Unexpected error during purchase:', error);
+      console.error('=== UNEXPECTED ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error instance:', error instanceof Error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('Full error object:', error);
+      
       toast({
         title: "Error",
         description: `Failed to process purchase: ${error instanceof Error ? error.message : 'Unknown error'}`,
