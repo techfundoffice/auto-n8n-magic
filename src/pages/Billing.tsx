@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { supabase } from '@/integrations/supabase/client';
-import { CreditCard, Plus, Settings, History } from 'lucide-react';
+import { CreditCard, Plus, Settings, History, ExternalLink, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import UserMenu from '@/components/UserMenu';
 import CreditPurchaseButton from '@/components/CreditPurchaseButton';
@@ -44,7 +44,21 @@ const Billing = () => {
         throw new Error(error.message || 'Failed to open customer portal');
       }
 
-      if (!data || !data.url) {
+      if (!data) {
+        throw new Error('No response data received from server.');
+      }
+
+      // Handle configuration required error
+      if (data.configurationRequired) {
+        toast({
+          title: "Setup Required",
+          description: "Please configure your Stripe Customer Portal first. Check the setup instructions below.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!data.url) {
         console.error('No URL in response data:', data);
         throw new Error('No portal URL received from server.');
       }
@@ -138,6 +152,38 @@ const Billing = () => {
                 </div>
                 <CreditPurchaseButton />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Stripe Setup Notice */}
+          <Card className="bg-orange-900/20 border-orange-500/30">
+            <CardHeader>
+              <CardTitle className="text-orange-300 flex items-center">
+                <AlertTriangle className="w-5 h-5 mr-2" />
+                Stripe Customer Portal Setup Required
+              </CardTitle>
+              <CardDescription className="text-orange-200">
+                To manage payment methods, you need to configure Stripe Customer Portal first
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-orange-100 text-sm space-y-2">
+                <p className="font-medium">Setup Steps:</p>
+                <ol className="list-decimal list-inside space-y-1 ml-4">
+                  <li>Go to your Stripe Dashboard</li>
+                  <li>Navigate to Settings → Customer Portal</li>
+                  <li>Configure your portal settings and activate it</li>
+                  <li>Return here to manage your payment methods</li>
+                </ol>
+              </div>
+              <Button 
+                variant="outline" 
+                className="border-orange-500 text-orange-300 hover:bg-orange-500/10"
+                onClick={() => window.open('https://dashboard.stripe.com/settings/billing/portal', '_blank')}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open Stripe Dashboard
+              </Button>
             </CardContent>
           </Card>
 

@@ -62,17 +62,35 @@ serve(async (req) => {
       logStep("Found existing Stripe customer", { customerId });
     }
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${origin}/billing`,
-    });
-    logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
+    try {
+      const origin = req.headers.get("origin") || "http://localhost:3000";
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${origin}/billing`,
+      });
+      logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
 
-    return new Response(JSON.stringify({ url: portalSession.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+      return new Response(JSON.stringify({ url: portalSession.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    } catch (portalError: any) {
+      logStep("Portal creation error", { error: portalError.message });
+      
+      // Handle specific Stripe Customer Portal configuration error
+      if (portalError.message?.includes("No configuration provided")) {
+        return new Response(JSON.stringify({ 
+          error: "Stripe Customer Portal is not configured yet. Please set up your Customer Portal configuration in your Stripe Dashboard at https://dashboard.stripe.com/settings/billing/portal before using this feature.",
+          configurationRequired: true
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+      
+      // Re-throw other portal errors
+      throw portalError;
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in customer-portal", { message: errorMessage });
