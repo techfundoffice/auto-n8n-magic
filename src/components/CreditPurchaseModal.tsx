@@ -60,7 +60,12 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
   const { user } = useAuth();
 
   const handlePurchase = async (packageId: string) => {
+    console.log('handlePurchase called with packageId:', packageId);
+    console.log('User:', user);
+    console.log('Auth state:', { user: !!user, email: user?.email });
+
     if (!user) {
+      console.error('No user found - authentication required');
       toast({
         title: "Authentication required",
         description: "Please sign in to purchase credits.",
@@ -73,20 +78,40 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
     setSelectedPackage(packageId);
 
     try {
+      console.log('About to invoke create-credit-payment function...');
+      console.log('Supabase client:', supabase);
+      
       const { data, error } = await supabase.functions.invoke('create-credit-payment', {
         body: { packageId }
       });
 
+      console.log('Function invocation completed');
+      console.log('Response data:', data);
+      console.log('Response error:', error);
+
       if (error) {
-        console.error('Payment error:', error);
+        console.error('Function invocation error:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         toast({
           title: "Payment Error",
-          description: "Failed to create payment session. Please try again.",
+          description: `Failed to create payment session: ${error.message || 'Unknown error'}`,
           variant: "destructive"
         });
         return;
       }
 
+      if (!data || !data.url) {
+        console.error('No URL returned from function', data);
+        toast({
+          title: "Payment Error",
+          description: "No payment URL received from server.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Opening Stripe checkout URL:', data.url);
+      
       // Open Stripe checkout in a new tab
       window.open(data.url, '_blank');
       
@@ -96,10 +121,11 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
       });
 
     } catch (error) {
-      console.error('Purchase error:', error);
+      console.error('Unexpected error during purchase:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       toast({
         title: "Error",
-        description: "Failed to process purchase. Please try again.",
+        description: `Failed to process purchase: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {

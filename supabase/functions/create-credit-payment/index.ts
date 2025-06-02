@@ -9,39 +9,60 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('=== Create Credit Payment Function Started ===');
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+
   if (req.method === "OPTIONS") {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('Create payment request received');
+    console.log('Processing payment request...');
 
-    // Check if required environment variables exist
+    // Check environment variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
 
+    console.log('Environment check:', {
+      supabaseUrl: !!supabaseUrl,
+      supabaseAnonKey: !!supabaseAnonKey,
+      supabaseServiceKey: !!supabaseServiceKey,
+      stripeSecretKey: !!stripeSecretKey
+    });
+
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey || !stripeSecretKey) {
-      console.error('Missing required environment variables');
-      throw new Error("Server configuration error");
+      console.error('Missing environment variables:', {
+        supabaseUrl: !supabaseUrl,
+        supabaseAnonKey: !supabaseAnonKey,
+        supabaseServiceKey: !supabaseServiceKey,
+        stripeSecretKey: !stripeSecretKey
+      });
+      throw new Error("Server configuration error - missing environment variables");
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
     // Get authenticated user
     const authHeader = req.headers.get("Authorization");
+    console.log('Authorization header present:', !!authHeader);
+    
     if (!authHeader) {
       console.error('No authorization header provided');
-      throw new Error("No authorization header");
+      throw new Error("Authentication required - no authorization header");
     }
 
     const token = authHeader.replace("Bearer ", "");
+    console.log('Extracting user from token...');
+    
     const { data, error: authError } = await supabaseClient.auth.getUser(token);
     
     if (authError) {
-      console.error('Auth error:', authError);
-      throw new Error("Authentication failed");
+      console.error('Authentication error:', authError);
+      throw new Error(`Authentication failed: ${authError.message}`);
     }
 
     const user = data.user;
@@ -50,13 +71,26 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    console.log('User authenticated:', user.id);
+    console.log('User authenticated successfully:', {
+      id: user.id,
+      email: user.email
+    });
 
-    const requestBody = await req.json();
+    // Parse request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Request body parsed:', requestBody);
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      throw new Error("Invalid request body");
+    }
+
     const { packageId } = requestBody;
-    console.log('Package ID:', packageId);
+    console.log('Package ID received:', packageId);
 
     if (!packageId) {
+      console.error('Package ID missing from request');
       throw new Error("Package ID is required");
     }
 
@@ -69,12 +103,14 @@ serve(async (req) => {
 
     const selectedPackage = packages[packageId as keyof typeof packages];
     if (!selectedPackage) {
-      throw new Error("Invalid package ID");
+      console.error('Invalid package ID:', packageId);
+      throw new Error(`Invalid package ID: ${packageId}`);
     }
 
     console.log('Selected package:', selectedPackage);
 
     // Initialize Stripe
+    console.log('Initializing Stripe...');
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2023-10-16",
     });
@@ -82,6 +118,7 @@ serve(async (req) => {
     // Check if customer exists
     let customerId;
     try {
+      console.log('Checking for existing Stripe customer...');
       const customers = await stripe.customers.list({
         email: user.email,
         limit: 1
@@ -91,7 +128,7 @@ serve(async (req) => {
         customerId = customers.data[0].id;
         console.log('Existing customer found:', customerId);
       } else {
-        // Create new customer
+        console.log('Creating new Stripe customer...');
         const customer = await stripe.customers.create({
           email: user.email,
           metadata: {
@@ -103,11 +140,11 @@ serve(async (req) => {
       }
     } catch (stripeError) {
       console.error('Stripe customer error:', stripeError);
-      throw new Error("Failed to create or find customer");
+      throw new Error(`Failed to handle Stripe customer: ${stripeError.message}`);
     }
 
     // Create checkout session
-    console.log('Creating checkout session...');
+    console.log('Creating Stripe checkout session...');
     let session;
     try {
       session = await stripe.checkout.sessions.create({
@@ -134,19 +171,22 @@ serve(async (req) => {
           credits: selectedPackage.credits.toString()
         }
       });
+      
+      console.log('Checkout session created successfully:', {
+        sessionId: session.id,
+        url: session.url
+      });
     } catch (stripeError) {
       console.error('Stripe session creation error:', stripeError);
-      throw new Error("Failed to create checkout session");
+      throw new Error(`Failed to create checkout session: ${stripeError.message}`);
     }
 
-    console.log('Checkout session created:', session.id);
-
     // Use service role to create purchase record
+    console.log('Creating purchase record in database...');
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey, { 
       auth: { persistSession: false } 
     });
 
-    // Create purchase record
     try {
       const { data: purchase, error: purchaseError } = await supabaseService
         .from("credit_purchases")
@@ -162,15 +202,18 @@ serve(async (req) => {
         .single();
 
       if (purchaseError) {
-        console.error('Error creating purchase record:', purchaseError);
-        throw new Error("Failed to create purchase record");
+        console.error('Database error creating purchase record:', purchaseError);
+        throw new Error(`Failed to create purchase record: ${purchaseError.message}`);
       }
 
-      console.log('Purchase record created:', purchase);
+      console.log('Purchase record created successfully:', purchase);
     } catch (dbError) {
-      console.error('Database error:', dbError);
-      throw new Error("Failed to record purchase");
+      console.error('Database operation failed:', dbError);
+      throw new Error(`Database error: ${dbError.message}`);
     }
+
+    console.log('=== Payment session created successfully ===');
+    console.log('Returning checkout URL to client');
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -178,9 +221,14 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error creating payment:', error);
+    console.error('=== Create Credit Payment Function Error ===');
+    console.error('Error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
     return new Response(JSON.stringify({ 
-      error: error.message || "An unexpected error occurred"
+      error: error.message || "An unexpected error occurred",
+      details: error.stack || "No stack trace available"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
