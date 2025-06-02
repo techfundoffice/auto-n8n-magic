@@ -11,7 +11,6 @@ const corsHeaders = {
 serve(async (req) => {
   console.log('=== Create Credit Payment Function Started ===');
   console.log('Request method:', req.method);
-  console.log('Request URL:', req.url);
 
   if (req.method === "OPTIONS") {
     console.log('Handling CORS preflight request');
@@ -35,12 +34,7 @@ serve(async (req) => {
     });
 
     if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey || !stripeSecretKey) {
-      console.error('Missing environment variables:', {
-        supabaseUrl: !supabaseUrl,
-        supabaseAnonKey: !supabaseAnonKey,
-        supabaseServiceKey: !supabaseServiceKey,
-        stripeSecretKey: !stripeSecretKey
-      });
+      console.error('Missing environment variables');
       throw new Error("Server configuration error - missing environment variables");
     }
 
@@ -52,7 +46,7 @@ serve(async (req) => {
     
     if (!authHeader) {
       console.error('No authorization header provided');
-      throw new Error("Authentication required - no authorization header");
+      throw new Error("Authentication required");
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -71,45 +65,25 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    console.log('User authenticated successfully:', {
-      id: user.id,
-      email: user.email
-    });
+    console.log('User authenticated successfully:', user.email);
 
-    // Enhanced request body parsing with better error handling
-    let requestBody;
+    // Parse request body - simplified approach
+    let packageId;
     try {
-      const bodyText = await req.text();
-      console.log('Raw request body text:', bodyText);
-      console.log('Request body length:', bodyText.length);
-      
-      if (!bodyText || bodyText.trim() === '') {
-        console.error('Empty request body detected');
-        throw new Error("Request body is empty - packageId parameter is required");
-      }
-      
-      // Try to parse as JSON
-      try {
-        requestBody = JSON.parse(bodyText);
-        console.log('Successfully parsed request body:', requestBody);
-      } catch (jsonError) {
-        console.error('Failed to parse JSON:', jsonError);
-        console.error('Body content that failed to parse:', bodyText);
-        throw new Error(`Invalid JSON in request body: ${jsonError.message}`);
-      }
+      const body = await req.json();
+      console.log('Parsed request body:', body);
+      packageId = body.packageId;
     } catch (parseError) {
-      console.error('Failed to read request body:', parseError);
-      throw new Error(`Failed to read request body: ${parseError.message}`);
+      console.error('Failed to parse request body:', parseError);
+      throw new Error("Invalid request body format");
     }
-
-    const { packageId } = requestBody;
-    console.log('Extracted packageId:', packageId);
 
     if (!packageId) {
-      console.error('Package ID missing from request body');
-      console.error('Available properties in body:', Object.keys(requestBody || {}));
-      throw new Error("packageId parameter is required in request body");
+      console.error('Package ID missing from request');
+      throw new Error("packageId parameter is required");
     }
+
+    console.log('Extracted packageId:', packageId);
 
     // Define credit packages
     const packages = {
@@ -121,8 +95,7 @@ serve(async (req) => {
     const selectedPackage = packages[packageId as keyof typeof packages];
     if (!selectedPackage) {
       console.error('Invalid package ID:', packageId);
-      console.error('Available packages:', Object.keys(packages));
-      throw new Error(`Invalid package ID: ${packageId}. Available packages: ${Object.keys(packages).join(', ')}`);
+      throw new Error(`Invalid package ID: ${packageId}`);
     }
 
     console.log('Selected package:', selectedPackage);
@@ -178,7 +151,7 @@ serve(async (req) => {
                 name: `${selectedPackage.credits} Credits`,
                 description: `Credit package for AutoN8n`,
               },
-              unit_amount: selectedPackage.price * 100, // Convert to cents
+              unit_amount: selectedPackage.price * 100,
             },
             quantity: 1,
           },
@@ -193,16 +166,13 @@ serve(async (req) => {
         }
       });
       
-      console.log('Checkout session created successfully:', {
-        sessionId: session.id,
-        url: session.url
-      });
+      console.log('Checkout session created successfully:', session.id);
     } catch (stripeError) {
       console.error('Stripe session creation error:', stripeError);
       throw new Error(`Failed to create checkout session: ${stripeError.message}`);
     }
 
-    // Use service role to create purchase record
+    // Create purchase record
     console.log('Creating purchase record in database...');
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey, { 
       auth: { persistSession: false } 
@@ -227,14 +197,13 @@ serve(async (req) => {
         throw new Error(`Failed to create purchase record: ${purchaseError.message}`);
       }
 
-      console.log('Purchase record created successfully:', purchase);
+      console.log('Purchase record created successfully');
     } catch (dbError) {
       console.error('Database operation failed:', dbError);
       throw new Error(`Database error: ${dbError.message}`);
     }
 
     console.log('=== Payment session created successfully ===');
-    console.log('Returning checkout URL to client');
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -245,11 +214,9 @@ serve(async (req) => {
     console.error('=== Create Credit Payment Function Error ===');
     console.error('Error:', error);
     console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
     
     return new Response(JSON.stringify({ 
-      error: error.message || "An unexpected error occurred",
-      details: error.stack || "No stack trace available"
+      error: error.message || "An unexpected error occurred"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

@@ -63,7 +63,6 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
     console.log('=== PURCHASE FLOW STARTED ===');
     console.log('Package ID:', packageId);
     console.log('User exists:', !!user);
-    console.log('User email:', user?.email);
 
     if (!user) {
       console.error('Authentication missing - User not found');
@@ -80,9 +79,7 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
 
     try {
       console.log('=== CALLING SUPABASE FUNCTION ===');
-      console.log('Function name: create-credit-payment');
-      console.log('Request payload:', { packageId });
-
+      
       // Get fresh session to ensure we have valid auth
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -97,12 +94,12 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
       }
 
       console.log('Session is valid, making function call...');
+      console.log('Request payload:', { packageId });
 
-      // Fixed function invocation with proper body formatting
+      // Call the edge function with proper JSON formatting
       const { data, error } = await supabase.functions.invoke('create-credit-payment', {
-        body: JSON.stringify({ packageId }),
+        body: { packageId },
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -113,23 +110,7 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
 
       if (error) {
         console.error('Function invocation error:', error);
-        
-        // Enhanced error handling with specific error types
-        let errorMessage = 'Failed to create payment session';
-        
-        if (error.message?.includes('JWT') || error.message?.includes('auth')) {
-          errorMessage = 'Authentication expired. Please log in again.';
-        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
-        } else if (error.message?.includes('Invalid request body')) {
-          errorMessage = 'Request formatting error. Please try again.';
-        } else if (error.message?.includes('Stripe')) {
-          errorMessage = 'Payment service error. Please try again or contact support.';
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        
-        throw new Error(errorMessage);
+        throw new Error(error.message || 'Failed to create payment session');
       }
 
       if (!data) {
@@ -155,9 +136,7 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
 
     } catch (error) {
       console.error('=== PURCHASE ERROR ===');
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error instanceof Error ? error.message : String(error));
-      console.error('Full error object:', error);
+      console.error('Error:', error);
       
       toast({
         title: "Payment Error",
