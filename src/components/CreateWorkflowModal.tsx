@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,17 +23,23 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
   const [workflowDescription, setWorkflowDescription] = useState('');
   const [workflowJson, setWorkflowJson] = useState('{\n  "nodes": [],\n  "connections": {}\n}');
   const [isCreating, setIsCreating] = useState(false);
+  const [isJsonValid, setIsJsonValid] = useState(true);
+  const [isFormValid, setIsFormValid] = useState(false);
+  
   const { toast } = useToast();
-  const { deductCredits, hasCredits } = useCredits();
+  const { deductCredits, hasCredits, credits } = useCredits();
   const { user } = useAuth();
 
   const resetForm = () => {
     setWorkflowName('');
     setWorkflowDescription('');
     setWorkflowJson('{\n  "nodes": [],\n  "connections": {}\n}');
+    setIsJsonValid(true);
+    setIsFormValid(false);
   };
 
   const validateJson = (jsonString: string) => {
+    if (!jsonString.trim()) return false;
     try {
       JSON.parse(jsonString);
       return true;
@@ -41,18 +48,24 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
     }
   };
 
-  // Check if form is valid for button enable/disable
-  const isFormValid = workflowName.trim() !== '' && workflowJson.trim() !== '' && validateJson(workflowJson);
-  const canSubmit = isFormValid && hasCredits(10) && !isCreating;
-
-  console.log('Form validation:', {
-    workflowName: workflowName.trim(),
-    workflowJson: workflowJson.trim(),
-    isJsonValid: validateJson(workflowJson),
-    hasCredits: hasCredits(10),
-    isCreating,
-    canSubmit
-  });
+  // Effect to validate form whenever inputs change
+  useEffect(() => {
+    const nameValid = workflowName.trim().length > 0;
+    const jsonValid = validateJson(workflowJson);
+    const hasEnoughCredits = hasCredits(10);
+    
+    setIsJsonValid(jsonValid);
+    setIsFormValid(nameValid && jsonValid && hasEnoughCredits && !isCreating);
+    
+    console.log('Form validation:', {
+      nameValid,
+      jsonValid,
+      hasEnoughCredits,
+      credits,
+      isCreating,
+      formValid: nameValid && jsonValid && hasEnoughCredits && !isCreating
+    });
+  }, [workflowName, workflowJson, credits, hasCredits, isCreating]);
 
   const handleCreateWorkflow = async () => {
     if (!user) {
@@ -92,6 +105,7 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
     }
 
     setIsCreating(true);
+    console.log('Starting workflow creation...');
 
     try {
       // Deduct credits first
@@ -219,16 +233,33 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
                   id="workflow-json"
                   value={workflowJson}
                   onChange={(e) => setWorkflowJson(e.target.value)}
-                  className="bg-gray-900/50 border-gray-600 text-white font-mono text-sm mt-2"
+                  className={`bg-gray-900/50 border-gray-600 text-white font-mono text-sm mt-2 ${
+                    !isJsonValid ? 'border-red-500' : ''
+                  }`}
                   placeholder="Enter your n8n workflow JSON here..."
                   rows={12}
                 />
+                {!isJsonValid && (
+                  <p className="text-sm text-red-400 mt-2">
+                    Invalid JSON format. Please check your syntax.
+                  </p>
+                )}
                 <p className="text-sm text-gray-500 mt-2">
                   Paste your n8n workflow JSON or create a new one following the n8n format.
                 </p>
               </div>
             </TabsContent>
           </Tabs>
+
+          {/* Debug information */}
+          <div className="text-xs text-gray-500 p-2 bg-gray-900/30 rounded">
+            Debug: Form valid: {isFormValid ? 'Yes' : 'No'} | 
+            Name: {workflowName.trim() ? 'Valid' : 'Empty'} | 
+            JSON: {isJsonValid ? 'Valid' : 'Invalid'} | 
+            Credits: {credits} | 
+            Has enough: {hasCredits(10) ? 'Yes' : 'No'} | 
+            Creating: {isCreating ? 'Yes' : 'No'}
+          </div>
         </div>
 
         <DialogFooter className="gap-2">
@@ -241,7 +272,7 @@ const CreateWorkflowModal = ({ open, onOpenChange, onWorkflowCreated }: CreateWo
           </Button>
           <Button 
             onClick={handleCreateWorkflow}
-            disabled={!canSubmit}
+            disabled={!isFormValid}
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50"
           >
             {isCreating ? (
