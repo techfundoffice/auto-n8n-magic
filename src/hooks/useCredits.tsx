@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,49 +18,49 @@ export const useCredits = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
+  const fetchCredits = async () => {
     if (!user) {
       setCredits(0);
       setLoading(false);
       return;
     }
 
-    const fetchCredits = async () => {
-      console.log('Fetching credits for user:', user.id);
-      
-      const { data, error } = await supabase
+    console.log('Fetching credits for user:', user.id);
+    
+    const { data, error } = await supabase
+      .from('user_credits')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code === 'PGRST116') {
+      // No credits record exists, create one
+      console.log('No credits record found, creating one...');
+      const { data: newCredits, error: insertError } = await supabase
         .from('user_credits')
+        .insert({ user_id: user.id, credits: 1250 })
         .select('*')
-        .eq('user_id', user.id)
         .single();
 
-      if (error && error.code === 'PGRST116') {
-        // No credits record exists, create one
-        console.log('No credits record found, creating one...');
-        const { data: newCredits, error: insertError } = await supabase
-          .from('user_credits')
-          .insert({ user_id: user.id, credits: 1250 })
-          .select('*')
-          .single();
-
-        if (insertError) {
-          console.error('Error creating credits record:', insertError);
-          setCredits(0);
-        } else {
-          console.log('Created new credits record:', newCredits);
-          setCredits(newCredits.credits);
-        }
-      } else if (error) {
-        console.error('Error fetching credits:', error);
+      if (insertError) {
+        console.error('Error creating credits record:', insertError);
         setCredits(0);
       } else {
-        console.log('Fetched credits:', data);
-        setCredits(data.credits);
+        console.log('Created new credits record:', newCredits);
+        setCredits(newCredits.credits);
       }
-      
-      setLoading(false);
-    };
+    } else if (error) {
+      console.error('Error fetching credits:', error);
+      setCredits(0);
+    } else {
+      console.log('Fetched credits:', data);
+      setCredits(data.credits);
+    }
+    
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchCredits();
 
     // Set up real-time subscription
@@ -71,7 +72,7 @@ export const useCredits = () => {
           event: '*',
           schema: 'public',
           table: 'user_credits',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user?.id}`
         },
         (payload) => {
           console.log('Credits updated via realtime:', payload);
@@ -82,9 +83,18 @@ export const useCredits = () => {
       )
       .subscribe();
 
+    // Listen for manual credit updates
+    const handleCreditsUpdated = () => {
+      console.log('Manual credits refresh triggered');
+      fetchCredits();
+    };
+    
+    window.addEventListener('creditsUpdated', handleCreditsUpdated);
+
     return () => {
       console.log('Cleaning up credits subscription');
       supabase.removeChannel(channel);
+      window.removeEventListener('creditsUpdated', handleCreditsUpdated);
     };
   }, [user]);
 
@@ -155,6 +165,7 @@ export const useCredits = () => {
     loading,
     deductCredits,
     hasCredits,
-    openCreditPurchase
+    openCreditPurchase,
+    refreshCredits: fetchCredits
   };
 };

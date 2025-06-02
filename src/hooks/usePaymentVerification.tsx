@@ -14,7 +14,10 @@ export const usePaymentVerification = () => {
     const sessionId = urlParams.get('session_id');
     const credits = urlParams.get('credits');
 
+    console.log('Payment verification - URL params:', { paymentStatus, sessionId, credits });
+
     if (paymentStatus === 'success' && sessionId && user) {
+      console.log('Starting payment verification for session:', sessionId);
       verifyPayment(sessionId, credits);
     } else if (paymentStatus === 'cancelled') {
       toast({
@@ -24,14 +27,25 @@ export const usePaymentVerification = () => {
       });
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
+    } else if (paymentStatus === 'success' && !sessionId) {
+      console.error('Payment success but no session_id found');
+      toast({
+        title: "Payment Verification Error",
+        description: "Missing session information. Please contact support.",
+        variant: "destructive"
+      });
     }
-  }, [user]);
+  }, [user, toast]);
 
   const verifyPayment = async (sessionId: string, credits: string | null) => {
     try {
+      console.log('Calling verify-credit-payment function with sessionId:', sessionId);
+      
       const { data, error } = await supabase.functions.invoke('verify-credit-payment', {
         body: { sessionId }
       });
+
+      console.log('Verification response:', { data, error });
 
       if (error) {
         console.error('Payment verification error:', error);
@@ -44,9 +58,19 @@ export const usePaymentVerification = () => {
       }
 
       if (data.success) {
+        console.log('Payment verified successfully, credits added:', data.creditsAdded);
         toast({
           title: "Payment Successful!",
           description: `${data.creditsAdded} credits have been added to your account.`,
+        });
+        
+        // Force a refresh of the credits data
+        window.dispatchEvent(new CustomEvent('creditsUpdated'));
+      } else {
+        console.log('Payment verification returned non-success:', data);
+        toast({
+          title: "Payment Processing",
+          description: data.message || "Payment is being processed. Credits will be added shortly.",
         });
       }
 
@@ -59,6 +83,7 @@ export const usePaymentVerification = () => {
       });
     } finally {
       // Clean up URL parameters
+      console.log('Cleaning up URL parameters');
       window.history.replaceState({}, '', window.location.pathname);
     }
   };
