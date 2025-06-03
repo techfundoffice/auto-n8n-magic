@@ -1,61 +1,20 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { CreditCard, Zap, Star, Crown } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
+import { creditPackages } from '@/data/creditPackages';
+import { CreditPackage } from '@/types/creditPackage';
+import CreditPackageCard from './CreditPackageCard';
+import PaymentFooter from './PaymentFooter';
 
 interface CreditPurchaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPurchaseSuccess?: () => void;
 }
-
-interface CreditPackage {
-  id: string;
-  credits: number;
-  price: number;
-  name: string;
-  description: string;
-  popular?: boolean;
-  icon: React.ReactNode;
-  paymentLink: string; // Stripe Payment Link URL
-}
-
-// TODO: Replace these with your actual Stripe Payment Link URLs from the dashboard
-const creditPackages: CreditPackage[] = [
-  {
-    id: 'starter',
-    credits: 500,
-    price: 5,
-    name: 'Starter',
-    description: 'Perfect for trying out AutoN8n',
-    icon: <Zap className="w-6 h-6" />,
-    paymentLink: 'https://buy.stripe.com/test_starter_replace_with_actual_link'
-  },
-  {
-    id: 'professional',
-    credits: 1000,
-    price: 9,
-    name: 'Professional',
-    description: 'Best value for regular users',
-    popular: true,
-    icon: <Star className="w-6 h-6" />,
-    paymentLink: 'https://buy.stripe.com/test_professional_replace_with_actual_link'
-  },
-  {
-    id: 'enterprise',
-    credits: 2500,
-    price: 20,
-    name: 'Enterprise',
-    description: 'For heavy automation users',
-    icon: <Crown className="w-6 h-6" />,
-    paymentLink: 'https://buy.stripe.com/test_enterprise_replace_with_actual_link'
-  }
-];
 
 const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPurchaseModalProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -129,65 +88,16 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
 
         <div className="grid md:grid-cols-3 gap-4 py-6">
           {creditPackages.map((pkg) => (
-            <Card 
+            <CreditPackageCard
               key={pkg.id}
-              className={`relative bg-gray-900/50 border-gray-600 hover:border-blue-500 transition-colors cursor-pointer ${
-                pkg.popular ? 'ring-2 ring-blue-500' : ''
-              }`}
-              onClick={() => handlePurchase(pkg)}
-            >
-              {pkg.popular && (
-                <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-blue-600">
-                  Most Popular
-                </Badge>
-              )}
-              
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4 text-blue-400">
-                  {pkg.icon}
-                </div>
-                <CardTitle className="text-white">{pkg.name}</CardTitle>
-                <CardDescription className="text-gray-400">
-                  {pkg.description}
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="text-center">
-                <div className="mb-4">
-                  <div className="text-3xl font-bold text-white">${pkg.price}</div>
-                  <div className="text-gray-400">
-                    {pkg.credits.toLocaleString()} credits
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    ${(pkg.price / pkg.credits * 1000).toFixed(2)} per 1000 credits
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Opening...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Purchase
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+              pkg={pkg}
+              isProcessing={isProcessing}
+              onPurchase={handlePurchase}
+            />
           ))}
         </div>
 
-        <div className="text-center text-sm text-gray-500">
-          <p>Secure payment powered by Stripe</p>
-          <p>Credits are added instantly after successful payment</p>
-        </div>
+        <PaymentFooter />
 
         <DialogFooter>
           <Button 
