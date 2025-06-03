@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, Zap, Star, Crown } from 'lucide-react';
 
 interface CreditPurchaseModalProps {
@@ -23,8 +22,10 @@ interface CreditPackage {
   description: string;
   popular?: boolean;
   icon: React.ReactNode;
+  paymentLink: string; // Stripe Payment Link URL
 }
 
+// TODO: Replace these with your actual Stripe Payment Link URLs from the dashboard
 const creditPackages: CreditPackage[] = [
   {
     id: 'starter',
@@ -32,7 +33,8 @@ const creditPackages: CreditPackage[] = [
     price: 5,
     name: 'Starter',
     description: 'Perfect for trying out AutoN8n',
-    icon: <Zap className="w-6 h-6" />
+    icon: <Zap className="w-6 h-6" />,
+    paymentLink: 'https://buy.stripe.com/test_starter_replace_with_actual_link'
   },
   {
     id: 'professional',
@@ -41,7 +43,8 @@ const creditPackages: CreditPackage[] = [
     name: 'Professional',
     description: 'Best value for regular users',
     popular: true,
-    icon: <Star className="w-6 h-6" />
+    icon: <Star className="w-6 h-6" />,
+    paymentLink: 'https://buy.stripe.com/test_professional_replace_with_actual_link'
   },
   {
     id: 'enterprise',
@@ -49,20 +52,20 @@ const creditPackages: CreditPackage[] = [
     price: 20,
     name: 'Enterprise',
     description: 'For heavy automation users',
-    icon: <Crown className="w-6 h-6" />
+    icon: <Crown className="w-6 h-6" />,
+    paymentLink: 'https://buy.stripe.com/test_enterprise_replace_with_actual_link'
   }
 ];
 
 const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPurchaseModalProps) => {
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const handlePurchase = async (packageId: string) => {
-    console.log('=== PURCHASE FLOW STARTED ===');
-    console.log('Package ID:', packageId);
-    console.log('User exists:', !!user);
+  const handlePurchase = async (pkg: CreditPackage) => {
+    console.log('=== PAYMENT LINK REDIRECT STARTED ===');
+    console.log('Package:', pkg.name, 'Credits:', pkg.credits);
+    console.log('Payment Link:', pkg.paymentLink);
 
     if (!user) {
       console.error('Authentication missing - User not found');
@@ -75,54 +78,30 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
     }
 
     setIsProcessing(true);
-    setSelectedPackage(packageId);
 
     try {
-      console.log('=== CALLING SUPABASE FUNCTION ===');
+      console.log('=== OPENING STRIPE PAYMENT LINK ===');
       
-      const requestBody = { packageId };
-      console.log('Request body before stringify:', requestBody);
+      // Check if the payment link is properly configured
+      if (pkg.paymentLink.includes('replace_with_actual_link')) {
+        throw new Error('Payment link not configured. Please set up Stripe Payment Links first.');
+      }
       
-      // Call the edge function with explicit JSON stringified body
-      const { data, error } = await supabase.functions.invoke('create-credit-payment', {
-        body: JSON.stringify(requestBody),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('=== FUNCTION RESPONSE ===');
-      console.log('Response data:', data);
-      console.log('Response error:', error);
-
-      if (error) {
-        console.error('Function invocation error:', error);
-        throw new Error(error.message || 'Failed to create payment session');
-      }
-
-      if (!data) {
-        console.error('No data returned from function');
-        throw new Error('No response received from payment service.');
-      }
-
-      if (!data.url) {
-        console.error('No URL in response data:', data);
-        throw new Error('No payment URL received from server.');
-      }
-
-      console.log('=== OPENING CHECKOUT ===');
-      console.log('Stripe checkout URL:', data.url);
-      
-      // Open Stripe checkout in a new tab
-      window.open(data.url, '_blank');
+      // Open Stripe Payment Link in a new tab
+      window.open(pkg.paymentLink, '_blank');
       
       toast({
         title: "Redirecting to payment",
         description: "Opening Stripe checkout in a new tab...",
       });
 
+      // Close modal after short delay since payment opens in new tab
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 1000);
+
     } catch (error) {
-      console.error('=== PURCHASE ERROR ===');
+      console.error('=== PAYMENT LINK ERROR ===');
       console.error('Error:', error);
       
       toast({
@@ -132,7 +111,6 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
       });
     } finally {
       setIsProcessing(false);
-      setSelectedPackage(null);
     }
   };
 
@@ -156,7 +134,7 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
               className={`relative bg-gray-900/50 border-gray-600 hover:border-blue-500 transition-colors cursor-pointer ${
                 pkg.popular ? 'ring-2 ring-blue-500' : ''
               }`}
-              onClick={() => handlePurchase(pkg.id)}
+              onClick={() => handlePurchase(pkg)}
             >
               {pkg.popular && (
                 <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-blue-600">
@@ -187,12 +165,12 @@ const CreditPurchaseModal = ({ open, onOpenChange, onPurchaseSuccess }: CreditPu
                 
                 <Button 
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  disabled={isProcessing && selectedPackage === pkg.id}
+                  disabled={isProcessing}
                 >
-                  {isProcessing && selectedPackage === pkg.id ? (
+                  {isProcessing ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
+                      Opening...
                     </>
                   ) : (
                     <>
