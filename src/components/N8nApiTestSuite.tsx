@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -154,7 +153,7 @@ const N8nApiTestSuite = () => {
               name: 'Start',
               type: 'n8n-nodes-base.start',
               typeVersion: 1,
-              position: [100, 100],
+              position: [100, 100] as [number, number],
               parameters: {}
             }
           ],
@@ -267,7 +266,7 @@ const N8nApiTestSuite = () => {
               name: 'Start',
               type: 'n8n-nodes-base.start',
               typeVersion: 1,
-              position: [100, 100],
+              position: [100, 100] as [number, number],
               parameters: {}
             }
           ],
