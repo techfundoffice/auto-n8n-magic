@@ -9,6 +9,7 @@ import { CheckCircle, XCircle, Clock, Play, ArrowLeft, RotateCcw } from 'lucide-
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import N8nApiTestSuite from '@/components/N8nApiTestSuite';
 
 interface TestCase {
   id: string;
@@ -380,15 +381,42 @@ const TestSuite = () => {
         {/* Test Categories */}
         <Tabs defaultValue="Authentication" className="space-y-6">
           <TabsList className="bg-gray-800/50 border-gray-700">
-            {Object.keys(categorizedTests).map(category => (
-              <TabsTrigger
-                key={category}
-                value={category}
-                className="text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                {category}
-              </TabsTrigger>
-            ))}
+            <TabsTrigger
+              value="Authentication"
+              className="text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              Authentication
+            </TabsTrigger>
+            <TabsTrigger
+              value="Navigation"
+              className="text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              Navigation
+            </TabsTrigger>
+            <TabsTrigger
+              value="Credits"
+              className="text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              Credits
+            </TabsTrigger>
+            <TabsTrigger
+              value="Profile"
+              className="text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              Profile
+            </TabsTrigger>
+            <TabsTrigger
+              value="UI/UX"
+              className="text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              UI/UX
+            </TabsTrigger>
+            <TabsTrigger
+              value="N8n API"
+              className="text-gray-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              N8n API
+            </TabsTrigger>
           </TabsList>
 
           {Object.entries(categorizedTests).map(([category, tests]) => (
@@ -425,6 +453,10 @@ const TestSuite = () => {
               </div>
             </TabsContent>
           ))}
+
+          <TabsContent value="N8n API">
+            <N8nApiTestSuite />
+          </TabsContent>
         </Tabs>
 
         {/* Test Summary */}
