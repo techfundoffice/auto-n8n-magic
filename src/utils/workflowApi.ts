@@ -16,6 +16,7 @@ export interface WorkflowGenerationResult {
 export interface WorkflowEnhancementResult {
   workflow?: any;
   description: string;
+  nodes?: string[];
   improvements?: string[];
   complexity?: string;
   deployment_type?: string;

@@ -31,7 +31,7 @@ export const useN8nExecutions = () => {
         setExecutions([]);
       } else {
         console.log('Fetched n8n executions:', data);
-        setExecutions(data || []);
+        setExecutions((data || []) as WorkflowExecution[]);
       }
       
       setLoading(false);
@@ -81,7 +81,7 @@ export const useN8nExecutions = () => {
             console.error('Error fetching n8n executions:', error);
             setExecutions([]);
           } else {
-            setExecutions(data || []);
+            setExecutions((data || []) as WorkflowExecution[]);
           }
           setLoading(false);
         };

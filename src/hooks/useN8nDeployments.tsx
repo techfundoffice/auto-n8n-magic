@@ -30,7 +30,7 @@ export const useN8nDeployments = () => {
         setDeployments([]);
       } else {
         console.log('Fetched n8n deployments:', data);
-        setDeployments(data || []);
+        setDeployments((data || []) as WorkflowDeployment[]);
       }
       
       setLoading(false);
@@ -79,7 +79,7 @@ export const useN8nDeployments = () => {
             console.error('Error fetching n8n deployments:', error);
             setDeployments([]);
           } else {
-            setDeployments(data || []);
+            setDeployments((data || []) as WorkflowDeployment[]);
           }
           setLoading(false);
         };

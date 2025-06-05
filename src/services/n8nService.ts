@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   N8nWorkflow, 
@@ -31,6 +30,14 @@ class N8nService {
     }
 
     return data;
+  }
+
+  private async getCurrentUserId(): Promise<string> {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+      throw new Error('User not authenticated');
+    }
+    return user.id;
   }
 
   // Workflow Management
@@ -207,6 +214,8 @@ class N8nService {
     try {
       console.log('Deploying workflow to n8n:', workflow.name);
       
+      const userId = await this.getCurrentUserId();
+      
       // Create workflow in n8n
       const n8nWorkflow = await this.createWorkflow({
         name: workflow.name || 'Generated Workflow',
@@ -222,7 +231,8 @@ class N8nService {
       const { data: deployment, error } = await supabase
         .from('n8n_workflow_deployments')
         .insert({
-          local_workflow_id: localWorkflowId,
+          user_id: userId,
+          local_workflow_id: localWorkflowId || null,
           n8n_workflow_id: n8nWorkflow.id,
           n8n_workflow_name: n8nWorkflow.name,
           deployment_status: 'deployed',
@@ -245,6 +255,8 @@ class N8nService {
 
   async syncExecutions(): Promise<void> {
     try {
+      const userId = await this.getCurrentUserId();
+      
       // Get recent executions from n8n
       const executions = await this.getExecutions({ limit: 50 });
       
@@ -261,6 +273,7 @@ class N8nService {
           await supabase
             .from('n8n_workflow_executions')
             .insert({
+              user_id: userId,
               n8n_execution_id: execution.id,
               n8n_workflow_id: execution.workflowId,
               status: execution.status,

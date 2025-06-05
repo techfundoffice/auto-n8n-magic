@@ -34,7 +34,7 @@ const WorkflowDeployButton = ({ workflow, workflowId, onDeploySuccess }: Workflo
       const n8nWorkflowId = await n8nService.deployWorkflow(workflowId || '', workflow);
       
       // Deduct credits for deployment
-      await deductCredits(10, 'Workflow deployment');
+      await deductCredits(10);
       
       toast({
         title: "Deployment Successful",
