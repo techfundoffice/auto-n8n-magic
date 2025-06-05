@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { n8nService } from '@/services/n8nService';
 
 export interface WorkflowGenerationResult {
   workflow?: any;
@@ -9,6 +10,7 @@ export interface WorkflowGenerationResult {
   deployment_type?: string;
   setup_instructions?: string[];
   error?: string;
+  canDeploy?: boolean;
 }
 
 export interface WorkflowEnhancementResult {
@@ -19,6 +21,7 @@ export interface WorkflowEnhancementResult {
   deployment_type?: string;
   setup_instructions?: string[];
   error?: string;
+  canDeploy?: boolean;
 }
 
 export const generateWorkflow = async (prompt: string): Promise<WorkflowGenerationResult> => {
@@ -35,7 +38,16 @@ export const generateWorkflow = async (prompt: string): Promise<WorkflowGenerati
       };
     }
 
-    return data;
+    // Check if the workflow can be deployed (has valid n8n structure)
+    const canDeploy = data.workflow && 
+                     data.workflow.nodes && 
+                     Array.isArray(data.workflow.nodes) &&
+                     data.workflow.nodes.length > 0;
+
+    return {
+      ...data,
+      canDeploy
+    };
   } catch (error) {
     console.error('Error generating workflow:', error);
     return { 
@@ -59,12 +71,31 @@ export const enhanceWorkflow = async (workflow: any, enhancementPrompt: string):
       };
     }
 
-    return data;
+    // Check if the enhanced workflow can be deployed
+    const canDeploy = data.workflow && 
+                     data.workflow.nodes && 
+                     Array.isArray(data.workflow.nodes) &&
+                     data.workflow.nodes.length > 0;
+
+    return {
+      ...data,
+      canDeploy
+    };
   } catch (error) {
     console.error('Error enhancing workflow:', error);
     return { 
       description: 'Failed to enhance workflow. Please try again.',
       error: error instanceof Error ? error.message : 'Unknown error'
     };
+  }
+};
+
+export const deployWorkflowToN8n = async (workflowId: string, workflow: any): Promise<string> => {
+  try {
+    console.log('Deploying workflow to n8n via API service...');
+    return await n8nService.deployWorkflow(workflowId, workflow);
+  } catch (error) {
+    console.error('Error deploying workflow:', error);
+    throw error;
   }
 };

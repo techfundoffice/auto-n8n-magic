@@ -9,6 +9,142 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      n8n_credentials: {
+        Row: {
+          created_at: string
+          credential_name: string
+          credential_type: string
+          id: string
+          n8n_credential_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credential_name: string
+          credential_type: string
+          id?: string
+          n8n_credential_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credential_name?: string
+          credential_type?: string
+          id?: string
+          n8n_credential_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      n8n_workflow_deployments: {
+        Row: {
+          created_at: string
+          deployment_status: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          local_workflow_id: string | null
+          n8n_workflow_id: string
+          n8n_workflow_name: string
+          sync_error: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deployment_status?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          local_workflow_id?: string | null
+          n8n_workflow_id: string
+          n8n_workflow_name: string
+          sync_error?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deployment_status?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          local_workflow_id?: string | null
+          n8n_workflow_id?: string
+          n8n_workflow_name?: string
+          sync_error?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "n8n_workflow_deployments_local_workflow_id_fkey"
+            columns: ["local_workflow_id"]
+            isOneToOne: false
+            referencedRelation: "user_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      n8n_workflow_executions: {
+        Row: {
+          created_at: string
+          deployment_id: string | null
+          error_message: string | null
+          execution_time: number | null
+          finished_at: string | null
+          id: string
+          mode: string
+          n8n_execution_id: string
+          n8n_workflow_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deployment_id?: string | null
+          error_message?: string | null
+          execution_time?: number | null
+          finished_at?: string | null
+          id?: string
+          mode: string
+          n8n_execution_id: string
+          n8n_workflow_id: string
+          started_at?: string | null
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deployment_id?: string | null
+          error_message?: string | null
+          execution_time?: number | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          n8n_execution_id?: string
+          n8n_workflow_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "n8n_workflow_executions_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: false
+            referencedRelation: "n8n_workflow_deployments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
