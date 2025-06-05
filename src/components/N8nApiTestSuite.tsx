@@ -60,14 +60,22 @@ const N8nApiTestSuite = () => {
   const testCases: TestCase[] = [
     // N8n API Connectivity Tests
     {
-      id: 'n8n-health-check',
-      name: 'N8n Health Check',
-      description: 'Test connection to n8n instance and verify it\'s healthy',
+      id: 'n8n-auth-ping',
+      name: 'N8n Authorization Ping',
+      description: 'Test connection and authorization to n8n instance using workflows endpoint',
       category: 'Connectivity',
       action: async () => {
-        const health = await n8nService.getHealth();
-        if (health.status !== 'ok') {
-          throw new Error(`N8n instance unhealthy: ${health.status}`);
+        // Use the workflows endpoint to test connectivity and authorization
+        const workflows = await n8nService.getWorkflows({ limit: 1 });
+        
+        // If we get here without throwing, the auth is working
+        if (!workflows || typeof workflows !== 'object') {
+          throw new Error('Invalid response format from n8n API');
+        }
+        
+        // Check if response has the expected structure
+        if (!workflows.hasOwnProperty('data')) {
+          throw new Error('Response missing expected data property');
         }
       }
     },
