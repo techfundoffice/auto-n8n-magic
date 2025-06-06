@@ -44,7 +44,9 @@ const N8nWorkflowsViewer = () => {
   const fetchAllWorkflows = async () => {
     try {
       setLoading(true);
+      console.log('Fetching workflows from n8n...');
       const response = await n8nService.getWorkflows({ limit: 100 });
+      console.log('Workflows response:', response);
       setWorkflows(response.data || []);
     } catch (error) {
       console.error('Error fetching workflows:', error);
@@ -63,7 +65,7 @@ const N8nWorkflowsViewer = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(workflow => 
-        workflow.name.toLowerCase().includes(searchTerm.toLowerCase())
+        workflow.name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -81,6 +83,7 @@ const N8nWorkflowsViewer = () => {
     setActionLoading(prev => ({ ...prev, [loadingKey]: true }));
 
     try {
+      console.log(`Performing ${action} on workflow ${workflowId}`);
       switch (action) {
         case 'activate':
           await n8nService.activateWorkflow(workflowId);
@@ -122,6 +125,7 @@ const N8nWorkflowsViewer = () => {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <span className="ml-2 text-gray-400">Loading workflows...</span>
       </div>
     );
   }
@@ -169,14 +173,15 @@ const N8nWorkflowsViewer = () => {
         <Card className="bg-gray-800/50 border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <RefreshCw className="w-5 h-5 text-purple-500" />
               <Button
                 onClick={fetchAllWorkflows}
                 variant="ghost"
                 size="sm"
-                className="text-gray-300 hover:text-white p-0"
+                className="text-gray-300 hover:text-white p-0 h-auto"
+                disabled={loading}
               >
-                Refresh
+                <RefreshCw className={`w-5 h-5 text-purple-500 ${loading ? 'animate-spin' : ''}`} />
+                <span className="ml-2">Refresh</span>
               </Button>
             </div>
           </CardContent>
@@ -221,17 +226,29 @@ const N8nWorkflowsViewer = () => {
         </CardHeader>
         <CardContent>
           {filteredWorkflows.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">
-              {workflows.length === 0 ? 'No workflows found in your n8n instance.' : 'No workflows match your filters.'}
-            </p>
+            <div className="text-center py-8">
+              {workflows.length === 0 ? (
+                <div className="text-gray-400">
+                  <Zap className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                  <p className="text-lg font-medium mb-2">No workflows found</p>
+                  <p className="text-sm">No workflows found in your n8n instance. Create some workflows in n8n to see them here.</p>
+                </div>
+              ) : (
+                <div className="text-gray-400">
+                  <Search className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                  <p className="text-lg font-medium mb-2">No workflows match your filters</p>
+                  <p className="text-sm">Try adjusting your search term or filter settings.</p>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="space-y-4">
               {filteredWorkflows.map((workflow) => (
                 <div key={workflow.id} className="bg-gray-700/50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 flex-1">
                       <div className="flex-1">
-                        <h3 className="text-white font-medium">{workflow.name}</h3>
+                        <h3 className="text-white font-medium">{workflow.name || 'Unnamed Workflow'}</h3>
                         <div className="flex items-center space-x-4 mt-1">
                           <p className="text-gray-400 text-sm">ID: {workflow.id}</p>
                           {workflow.createdAt && (
@@ -249,7 +266,10 @@ const N8nWorkflowsViewer = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge className={workflow.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                        <Badge 
+                          variant={workflow.active ? "default" : "secondary"}
+                          className={workflow.active ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300"}
+                        >
                           {workflow.active ? 'Active' : 'Inactive'}
                         </Badge>
                         {workflow.tags && workflow.tags.length > 0 && (
@@ -259,13 +279,14 @@ const N8nWorkflowsViewer = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 ml-4">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleWorkflowAction('execute', workflow.id)}
                         disabled={actionLoading[`execute-${workflow.id}`]}
                         className="text-gray-300 border-gray-600 hover:bg-gray-600"
+                        title="Execute workflow"
                       >
                         <Play className="w-4 h-4" />
                       </Button>
@@ -278,6 +299,7 @@ const N8nWorkflowsViewer = () => {
                         )}
                         disabled={actionLoading[`${workflow.active ? 'deactivate' : 'activate'}-${workflow.id}`]}
                         className="text-gray-300 border-gray-600 hover:bg-gray-600"
+                        title={workflow.active ? 'Deactivate workflow' : 'Activate workflow'}
                       >
                         {workflow.active ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                       </Button>
@@ -286,6 +308,7 @@ const N8nWorkflowsViewer = () => {
                         variant="outline"
                         onClick={() => window.open(`https://your-n8n-instance.com/workflow/${workflow.id}`, '_blank')}
                         className="text-gray-300 border-gray-600 hover:bg-gray-600"
+                        title="Open in n8n"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </Button>
