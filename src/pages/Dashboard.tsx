@@ -1,17 +1,15 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useCredits } from '@/hooks/useCredits';
 import { usePaymentVerification } from '@/hooks/usePaymentVerification';
-import { Plus, Zap, TestTube, Activity } from 'lucide-react';
+import { Plus, Zap, TestTube, Activity, TrendingUp, Clock } from 'lucide-react';
 import CreateWorkflowModal from '@/components/CreateWorkflowModal';
-import CreditPurchaseButton from '@/components/CreditPurchaseButton';
 import TestSuiteButton from '@/components/TestSuiteButton';
-import UserMenu from '@/components/UserMenu';
 import Chatbot from '@/components/Chatbot';
-import N8nDashboard from '@/components/N8nDashboard';
+import SidebarLayout from '@/components/layout/SidebarLayout';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -24,149 +22,152 @@ const Dashboard = () => {
 
   if (creditsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-      </div>
+      <SidebarLayout>
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        </div>
+      </SidebarLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
-      {/* Header */}
-      <div className="border-b border-gray-700/50 bg-gray-900/50 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-white">AutoN8n Dashboard</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 bg-gray-800/50 px-3 py-2 rounded-lg">
-                <Zap className="w-4 h-4 text-yellow-500" />
-                <span className="text-white font-medium">{credits} credits</span>
-              </div>
-              <CreditPurchaseButton />
-              <UserMenu />
-            </div>
-          </div>
+    <SidebarLayout>
+      <div className="p-6">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Welcome back, {user?.user_metadata?.full_name || user?.email}!
+          </h1>
+          <p className="text-gray-300">
+            Create, enhance, and manage your n8n workflows with AI assistance.
+          </p>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">
-              Welcome back, {user?.user_metadata?.full_name || user?.email}!
-            </h2>
-            <p className="text-gray-300">
-              Create, enhance, and manage your n8n workflows with AI assistance.
-            </p>
-          </div>
-
-          {/* Dashboard Tabs */}
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="bg-gray-800/50 border-gray-700">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-gray-700">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="n8n" className="data-[state=active]:bg-gray-700">
-                <Activity className="w-4 h-4 mr-2" />
-                N8n Management
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6">
-              {/* Quick Actions */}
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <Card className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-colors">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center">
-                      <Plus className="w-5 h-5 mr-2 text-blue-500" />
-                      Create Workflow
-                    </CardTitle>
-                    <CardDescription className="text-gray-300">
-                      Generate new n8n workflows using AI
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button 
-                      onClick={() => setIsCreateModalOpen(true)}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      Start Creating
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-colors">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center">
-                      <Zap className="w-5 h-5 mr-2 text-purple-500" />
-                      AI Assistant
-                    </CardTitle>
-                    <CardDescription className="text-gray-300">
-                      Chat with AI to enhance workflows
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button 
-                      onClick={() => setIsChatbotOpen(true)}
-                      className="w-full bg-purple-600 hover:bg-purple-700"
-                    >
-                      Open Chat
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-colors">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center">
-                      <TestTube className="w-5 h-5 mr-2 text-green-500" />
-                      Test Suite
-                    </CardTitle>
-                    <CardDescription className="text-gray-300">
-                      Test all features and functionality
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <TestSuiteButton />
-                  </CardContent>
-                </Card>
+        {/* Quick Stats */}
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <Zap className="w-5 h-5 text-blue-500" />
+                <div>
+                  <p className="text-2xl font-bold text-white">{credits}</p>
+                  <p className="text-gray-400 text-sm">Credits Available</p>
+                </div>
               </div>
-
-              {/* Credits Section */}
-              <Card className="bg-gray-800/50 border-gray-700 mb-8">
-                <CardHeader>
-                  <CardTitle className="text-white">Credit Balance</CardTitle>
-                  <CardDescription className="text-gray-300">
-                    Your current credit balance and usage information
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2 bg-yellow-500/10 px-4 py-2 rounded-lg border border-yellow-500/20">
-                        <Zap className="w-5 h-5 text-yellow-500" />
-                        <span className="text-yellow-400 font-bold text-lg">{credits} Credits</span>
-                      </div>
-                      <div className="text-gray-300 text-sm">
-                        • Workflow Generation: 15 credits<br />
-                        • Workflow Enhancement: 10 credits<br />
-                        • Workflow Creation: 10 credits
-                      </div>
-                    </div>
-                    <CreditPurchaseButton />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="n8n" className="space-y-6">
-              <N8nDashboard />
-            </TabsContent>
-          </Tabs>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <Activity className="w-5 h-5 text-green-500" />
+                <div>
+                  <p className="text-2xl font-bold text-white">12</p>
+                  <p className="text-gray-400 text-sm">Active Workflows</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="w-5 h-5 text-purple-500" />
+                <div>
+                  <p className="text-2xl font-bold text-white">247</p>
+                  <p className="text-gray-400 text-sm">Executions Today</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <Clock className="w-5 h-5 text-yellow-500" />
+                <div>
+                  <p className="text-2xl font-bold text-white">98.5%</p>
+                  <p className="text-gray-400 text-sm">Success Rate</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Quick Actions */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-colors">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center">
+                <Plus className="w-5 h-5 mr-2 text-blue-500" />
+                Create Workflow
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Generate new n8n workflows using AI
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                Start Creating
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-colors">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center">
+                <Zap className="w-5 h-5 mr-2 text-purple-500" />
+                AI Assistant
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Chat with AI to enhance workflows
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={() => setIsChatbotOpen(true)}
+                className="w-full bg-purple-600 hover:bg-purple-700"
+              >
+                Open Chat
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-colors">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center">
+                <TestTube className="w-5 h-5 mr-2 text-green-500" />
+                Test Suite
+              </CardTitle>
+              <CardDescription className="text-gray-300">
+                Test all features and functionality
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TestSuiteButton />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Credits Information */}
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Credit Usage</CardTitle>
+            <CardDescription className="text-gray-300">
+              Your current credit balance and usage information
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-gray-300 text-sm space-y-1">
+              <p>• Workflow Generation: 15 credits</p>
+              <p>• Workflow Enhancement: 10 credits</p>
+              <p>• Workflow Creation: 10 credits</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Modals */}
@@ -180,7 +181,7 @@ const Dashboard = () => {
         isOpen={isChatbotOpen} 
         onToggle={() => setIsChatbotOpen(!isChatbotOpen)} 
       />
-    </div>
+    </SidebarLayout>
   );
 };
 

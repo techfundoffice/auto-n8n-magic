@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +16,12 @@ import Profile from "./pages/Profile";
 import TestSuite from "./pages/TestSuite";
 import Billing from "./pages/Billing";
 import NotFound from "./pages/NotFound";
+import Workflows from "./pages/Workflows";
+import WorkflowCreate from "./pages/WorkflowCreate";
+import Monitoring from "./pages/Monitoring";
+import MonitoringHistory from "./pages/MonitoringHistory";
+import Testing from "./pages/Testing";
+import TestingStatus from "./pages/TestingStatus";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +46,36 @@ const App = () => (
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/workflows" element={
+              <ProtectedRoute>
+                <Workflows />
+              </ProtectedRoute>
+            } />
+            <Route path="/workflows/create" element={
+              <ProtectedRoute>
+                <WorkflowCreate />
+              </ProtectedRoute>
+            } />
+            <Route path="/monitoring" element={
+              <ProtectedRoute>
+                <Monitoring />
+              </ProtectedRoute>
+            } />
+            <Route path="/monitoring/history" element={
+              <ProtectedRoute>
+                <MonitoringHistory />
+              </ProtectedRoute>
+            } />
+            <Route path="/testing" element={
+              <ProtectedRoute>
+                <Testing />
+              </ProtectedRoute>
+            } />
+            <Route path="/testing/status" element={
+              <ProtectedRoute>
+                <TestingStatus />
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
