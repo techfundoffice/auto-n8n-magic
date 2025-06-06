@@ -1,28 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { n8nService } from '@/services/n8nService';
 import { N8nWorkflow } from '@/types/n8n';
-import { 
-  Play, 
-  Square, 
-  Search, 
-  Filter, 
-  RefreshCw, 
-  ExternalLink,
-  Activity,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Calendar,
-  Zap
-} from 'lucide-react';
+import WorkflowStats from './workflows/WorkflowStats';
+import WorkflowFilters from './workflows/WorkflowFilters';
+import WorkflowList from './workflows/WorkflowList';
 
 const N8nWorkflowsViewer = () => {
   const [workflows, setWorkflows] = useState<N8nWorkflow[]>([]);
@@ -48,7 +31,6 @@ const N8nWorkflowsViewer = () => {
       const response = await n8nService.getWorkflows({ limit: 100 });
       console.log('Workflows response:', response);
       
-      // Ensure we have valid data
       const workflowsData = Array.isArray(response.data) ? response.data : [];
       console.log('Processed workflows data:', workflowsData);
       setWorkflows(workflowsData);
@@ -59,7 +41,7 @@ const N8nWorkflowsViewer = () => {
         description: "Failed to fetch workflows from n8n instance",
         variant: "destructive"
       });
-      setWorkflows([]); // Set empty array on error
+      setWorkflows([]);
     } finally {
       setLoading(false);
     }
@@ -124,19 +106,6 @@ const N8nWorkflowsViewer = () => {
     return { total, active, inactive };
   };
 
-  const getTagDisplay = (tags: any) => {
-    if (!tags || !Array.isArray(tags) || tags.length === 0) return null;
-    
-    const firstTag = tags[0];
-    // Handle both string tags and object tags
-    if (typeof firstTag === 'string') {
-      return firstTag;
-    } else if (typeof firstTag === 'object' && firstTag.name) {
-      return firstTag.name;
-    }
-    return null;
-  };
-
   const stats = getWorkflowStats();
 
   if (loading) {
@@ -150,198 +119,27 @@ const N8nWorkflowsViewer = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header and Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gray-800/50 border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Zap className="w-5 h-5 text-blue-500" />
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.total}</p>
-                <p className="text-gray-400 text-sm">Total Workflows</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gray-800/50 border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.active}</p>
-                <p className="text-gray-400 text-sm">Active</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gray-800/50 border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <XCircle className="w-5 h-5 text-gray-500" />
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.inactive}</p>
-                <p className="text-gray-400 text-sm">Inactive</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gray-800/50 border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={fetchAllWorkflows}
-                variant="ghost"
-                size="sm"
-                className="text-gray-300 hover:text-white p-0 h-auto"
-                disabled={loading}
-              >
-                <RefreshCw className={`w-5 h-5 text-purple-500 ${loading ? 'animate-spin' : ''}`} />
-                <span className="ml-2">Refresh</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <WorkflowStats
+        total={stats.total}
+        active={stats.active}
+        inactive={stats.inactive}
+        loading={loading}
+        onRefresh={fetchAllWorkflows}
+      />
 
-      {/* Filters */}
-      <Card className="bg-gray-800/50 border-gray-700">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search workflows..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
-              <SelectTrigger className="w-48 bg-gray-700 border-gray-600 text-white">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-700 border-gray-600">
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active Only</SelectItem>
-                <SelectItem value="inactive">Inactive Only</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <WorkflowFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+      />
 
-      {/* Workflows List */}
-      <Card className="bg-gray-800/50 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white">All N8n Workflows</CardTitle>
-          <CardDescription className="text-gray-300">
-            Manage all workflows from your n8n instance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredWorkflows.length === 0 ? (
-            <div className="text-center py-8">
-              {workflows.length === 0 ? (
-                <div className="text-gray-400">
-                  <Zap className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                  <p className="text-lg font-medium mb-2">No workflows found</p>
-                  <p className="text-sm">No workflows found in your n8n instance. Create some workflows in n8n to see them here.</p>
-                </div>
-              ) : (
-                <div className="text-gray-400">
-                  <Search className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                  <p className="text-lg font-medium mb-2">No workflows match your filters</p>
-                  <p className="text-sm">Try adjusting your search term or filter settings.</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredWorkflows.map((workflow) => {
-                const tagDisplay = getTagDisplay(workflow.tags);
-                
-                return (
-                  <div key={workflow.id} className="bg-gray-700/50 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 flex-1">
-                        <div className="flex-1">
-                          <h3 className="text-white font-medium">{workflow.name || 'Unnamed Workflow'}</h3>
-                          <div className="flex items-center space-x-4 mt-1">
-                            <p className="text-gray-400 text-sm">ID: {workflow.id}</p>
-                            {workflow.createdAt && (
-                              <div className="flex items-center space-x-1 text-gray-400 text-sm">
-                                <Calendar className="w-3 h-3" />
-                                <span>{new Date(workflow.createdAt).toLocaleDateString()}</span>
-                              </div>
-                            )}
-                            {workflow.nodes && Array.isArray(workflow.nodes) && (
-                              <div className="flex items-center space-x-1 text-gray-400 text-sm">
-                                <Activity className="w-3 h-3" />
-                                <span>{workflow.nodes.length} nodes</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge 
-                            variant={workflow.active ? "default" : "secondary"}
-                            className={workflow.active ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300"}
-                          >
-                            {workflow.active ? 'Active' : 'Inactive'}
-                          </Badge>
-                          {tagDisplay && (
-                            <Badge variant="outline" className="border-blue-500 text-blue-400">
-                              {tagDisplay}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2 ml-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleWorkflowAction('execute', workflow.id)}
-                          disabled={actionLoading[`execute-${workflow.id}`]}
-                          className="text-gray-300 border-gray-600 hover:bg-gray-600"
-                          title="Execute workflow"
-                        >
-                          <Play className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleWorkflowAction(
-                            workflow.active ? 'deactivate' : 'activate',
-                            workflow.id
-                          )}
-                          disabled={actionLoading[`${workflow.active ? 'deactivate' : 'activate'}-${workflow.id}`]}
-                          className="text-gray-300 border-gray-600 hover:bg-gray-600"
-                          title={workflow.active ? 'Deactivate workflow' : 'Activate workflow'}
-                        >
-                          {workflow.active ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(`https://your-n8n-instance.com/workflow/${workflow.id}`, '_blank')}
-                          className="text-gray-300 border-gray-600 hover:bg-gray-600"
-                          title="Open in n8n"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <WorkflowList
+        filteredWorkflows={filteredWorkflows}
+        totalWorkflows={workflows.length}
+        actionLoading={actionLoading}
+        onWorkflowAction={handleWorkflowAction}
+      />
     </div>
   );
 };
