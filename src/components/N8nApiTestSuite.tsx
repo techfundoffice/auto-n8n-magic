@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -134,16 +135,30 @@ const N8nApiTestSuite = () => {
       }
     },
 
-    // Workflow Management Tests
+    // Comprehensive Workflow Management Tests
     {
       id: 'n8n-list-workflows',
-      name: 'List Workflows',
-      description: 'Test fetching workflows from n8n instance',
+      name: 'List All Workflows',
+      description: 'Test fetching all workflows from n8n instance with pagination',
       category: 'Workflows',
       action: async () => {
-        const workflows = await n8nService.getWorkflows({ limit: 10 });
+        const workflows = await n8nService.getWorkflows({ limit: 50 });
         if (!workflows.data || !Array.isArray(workflows.data)) {
           throw new Error('Invalid workflows response format');
+        }
+      }
+    },
+    {
+      id: 'n8n-workflow-filtering',
+      name: 'Workflow Filtering',
+      description: 'Test filtering workflows by active status and tags',
+      category: 'Workflows',
+      action: async () => {
+        const activeWorkflows = await n8nService.getWorkflows({ active: true, limit: 10 });
+        const inactiveWorkflows = await n8nService.getWorkflows({ active: false, limit: 10 });
+        
+        if (!activeWorkflows.data || !inactiveWorkflows.data) {
+          throw new Error('Failed to filter workflows by status');
         }
       }
     },
@@ -166,7 +181,8 @@ const N8nApiTestSuite = () => {
             }
           ],
           connections: {},
-          active: false
+          active: false,
+          settings: {}
         };
 
         const createdWorkflow = await n8nService.createWorkflow(testWorkflow);
@@ -183,12 +199,12 @@ const N8nApiTestSuite = () => {
       }
     },
 
-    // Node Types Tests
+    // Node Types and System Tests
     {
       id: 'n8n-list-node-types',
       name: 'List Node Types',
       description: 'Test fetching available node types from n8n',
-      category: 'Node Types',
+      category: 'System',
       action: async () => {
         const nodeTypes = await n8nService.getNodeTypes();
         if (!Array.isArray(nodeTypes)) {
@@ -199,18 +215,104 @@ const N8nApiTestSuite = () => {
         }
       }
     },
+    {
+      id: 'n8n-health-check',
+      name: 'System Health Check',
+      description: 'Test n8n system health endpoint',
+      category: 'System',
+      action: async () => {
+        const health = await n8nService.getHealth();
+        if (!health || health.status !== 'ok') {
+          throw new Error(`N8n system unhealthy: ${health?.status || 'unknown'}`);
+        }
+      }
+    },
 
-    // Execution Tests
+    // Execution Management Tests
     {
       id: 'n8n-list-executions',
       name: 'List Executions',
       description: 'Test fetching workflow executions from n8n',
       category: 'Executions',
       action: async () => {
-        const executions = await n8nService.getExecutions({ limit: 10 });
+        const executions = await n8nService.getExecutions({ limit: 20 });
         if (!executions.data || !Array.isArray(executions.data)) {
           throw new Error('Invalid executions response format');
         }
+      }
+    },
+    {
+      id: 'n8n-execution-filtering',
+      name: 'Execution Status Filtering',
+      description: 'Test filtering executions by status and workflow ID',
+      category: 'Executions',
+      action: async () => {
+        const successExecutions = await n8nService.getExecutions({ status: 'success', limit: 5 });
+        const errorExecutions = await n8nService.getExecutions({ status: 'error', limit: 5 });
+        
+        if (!successExecutions.data || !errorExecutions.data) {
+          throw new Error('Failed to filter executions by status');
+        }
+      }
+    },
+
+    // Credentials Management Tests
+    {
+      id: 'n8n-list-credentials',
+      name: 'List Credentials',
+      description: 'Test fetching credentials from n8n instance',
+      category: 'Credentials',
+      action: async () => {
+        const credentials = await n8nService.getCredentials();
+        if (!Array.isArray(credentials)) {
+          throw new Error('Invalid credentials response format');
+        }
+      }
+    },
+
+    // Variables Management Tests
+    {
+      id: 'n8n-list-variables',
+      name: 'List Variables',
+      description: 'Test fetching environment variables from n8n',
+      category: 'Variables',
+      action: async () => {
+        const variables = await n8nService.getVariables();
+        if (!Array.isArray(variables)) {
+          throw new Error('Invalid variables response format');
+        }
+      }
+    },
+    {
+      id: 'n8n-variable-crud',
+      name: 'Variable CRUD Operations',
+      description: 'Test creating, reading, updating, and deleting variables',
+      category: 'Variables',
+      action: async () => {
+        const testKey = `test_var_${Date.now()}`;
+        const testValue = 'test_value';
+
+        // Create variable
+        const created = await n8nService.createVariable({ key: testKey, value: testValue });
+        if (!created.id || created.key !== testKey) {
+          throw new Error('Failed to create variable');
+        }
+
+        // Read variable
+        const retrieved = await n8nService.getVariable(created.id);
+        if (retrieved.key !== testKey || retrieved.value !== testValue) {
+          throw new Error('Failed to retrieve variable');
+        }
+
+        // Update variable
+        const newValue = 'updated_value';
+        const updated = await n8nService.updateVariable(created.id, { key: testKey, value: newValue });
+        if (updated.value !== newValue) {
+          throw new Error('Failed to update variable');
+        }
+
+        // Delete variable
+        await n8nService.deleteVariable(created.id);
       }
     },
 
@@ -256,6 +358,26 @@ const N8nApiTestSuite = () => {
         }
       }
     },
+    {
+      id: 'db-credentials-table',
+      name: 'Credentials Table Access',
+      description: 'Test reading from n8n_credentials table',
+      category: 'Database',
+      action: async () => {
+        const { data, error } = await supabase
+          .from('n8n_credentials')
+          .select('*')
+          .limit(5);
+
+        if (error) {
+          throw new Error(`Database access failed: ${error.message}`);
+        }
+
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid response format from database');
+        }
+      }
+    },
 
     // Service Layer Tests
     {
@@ -278,7 +400,8 @@ const N8nApiTestSuite = () => {
               parameters: {}
             }
           ],
-          connections: {}
+          connections: {},
+          settings: {}
         };
 
         // This will test the service method but might fail at n8n level
